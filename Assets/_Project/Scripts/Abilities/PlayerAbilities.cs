@@ -4,8 +4,8 @@ using UnityEngine;
 using UnityEngine.InputSystem;
 
 /// <summary>
-/// Owns the player's action bar slots, cooldowns, the global cooldown, and
-/// casting. Attach to the Player.
+/// Owns the player's action bar slots, cooldowns, GCD, casting, and action state machine.
+/// Attach to the Player.
 /// </summary>
 [RequireComponent(typeof(PlayerStats))]
 [RequireComponent(typeof(PlayerTargeting))]
@@ -37,15 +37,14 @@ public class PlayerAbilities : MonoBehaviour
 
     [Header("Debug")]
     public bool logBlockReasons = true;
+    public bool logStateTransitions = false;
 
-    // ---- Events for UI ----
-    public event Action<Ability, float> OnCastStarted;    // ability, duration
-    public event Action<Ability> OnCastCompleted;
-    public event Action<string> OnCastCancelled;          // reason
-    public event Action<string> OnAbilityBlocked;         // reason, for error text
-    public event Action OnSlotsChanged;
+    // ---- State Machine ----
+    public PlayerActionState ActionState { get; private set; } = PlayerActionState.Available;
+    public event Action<PlayerActionState, PlayerActionState> OnActionStateChanged; // (previous, next)
 
-    public bool IsCasting { get; private set; }
+    // Backwards-compatible cast properties for existing UI
+    public bool IsCasting => ActionState == PlayerActionState.Casting;
     public Ability CastingAbility { get; private set; }
     public float CastStartTime { get; private set; }
     public float CastEndTime { get; private set; }
@@ -54,12 +53,22 @@ public class PlayerAbilities : MonoBehaviour
         ? Mathf.Clamp01((Time.time - CastStartTime) / (CastEndTime - CastStartTime))
         : 0f;
 
+    /// <summary>True if the player is allowed to move right now.</summary>
+    public bool CanMove => ActionState != PlayerActionState.Dead &&
+                          (!IsCasting || (CastingAbility != null && CastingAbility.usableWhileMoving));
+
+    // ---- Events for UI ----
+    public event Action<Ability, float> OnCastStarted;    // ability, duration
+    public event Action<Ability> OnCastCompleted;
+    public event Action<string> OnCastCancelled;          // reason
+    public event Action<string> OnAbilityBlocked;         // reason, for error text
+    public event Action OnSlotsChanged;
+
     private PlayerStats stats;
     private PlayerTargeting targeting;
     private PlayerCombat combat;
     private CharacterController controller;
 
-    // Cooldowns keyed by the asset, so the same ability in two slots shares one timer.
     private readonly Dictionary<Ability, float> cooldownEnd = new();
     private float gcdEnd;
 
@@ -82,30 +91,62 @@ public class PlayerAbilities : MonoBehaviour
     void OnEnable()
     {
         targeting.OnAttackRequested += HandleRightClickAttack;
+        if (stats != null) stats.OnDeath += HandleDeath;
     }
 
     void OnDisable()
     {
         targeting.OnAttackRequested -= HandleRightClickAttack;
+        if (stats != null) stats.OnDeath -= HandleDeath;
     }
 
     void Update()
     {
+        // Death check & state synchronization
         if (stats.IsDead)
         {
-            if (IsCasting) CancelCast("You are dead");
+            if (ActionState != PlayerActionState.Dead)
+                SetState(PlayerActionState.Dead);
             return;
+        }
+        else if (ActionState == PlayerActionState.Dead)
+        {
+            // Player was revived
+            SetState(PlayerActionState.Available);
         }
 
         TickCast();
         ReadInput();
     }
 
+    // ---- State Transition Core ----
+
+    private void SetState(PlayerActionState newState)
+    {
+        if (ActionState == newState) return;
+
+        PlayerActionState previous = ActionState;
+        ActionState = newState;
+
+        if (logStateTransitions)
+            Debug.Log($"ActionState: {previous} -> {newState}");
+
+        OnActionStateChanged?.Invoke(previous, newState);
+    }
+
+    private void HandleDeath()
+    {
+        if (IsCasting)
+            CancelCast("You are dead");
+
+        SetState(PlayerActionState.Dead);
+    }
+
     // ---- Input ----
 
     private void ReadInput()
     {
-        if (Keyboard.current == null) return;
+        if (Keyboard.current == null || ActionState == PlayerActionState.Dead) return;
 
         int count = Mathf.Min(slotKeys.Length, SlotCount);
         for (int i = 0; i < count; i++)
@@ -117,45 +158,41 @@ public class PlayerAbilities : MonoBehaviour
 
     private void HandleRightClickAttack(Health target)
     {
-        // Right-click engages auto-attack directly, bypassing the bar,
-        // so it works even if the player has not slotted it.
-        if (combat != null) combat.EngageAutoAttack();
+        if (combat != null && ActionState != PlayerActionState.Dead)
+            combat.EngageAutoAttack();
     }
 
-    // ---- Use ----
+    // ---- Use & Casting ----
 
     public bool TryUseSlot(int slot)
     {
         if (slot < 0 || slot >= SlotCount) return false;
-
         Ability ability = slots[slot];
-        if (ability == null) return false;
-
-        return TryUse(ability);
+        return ability != null && TryUse(ability);
     }
 
     public bool TryUse(Ability ability)
     {
-        if (ability == null) return false;
+        if (ability == null || ActionState == PlayerActionState.Dead) return false;
 
         var ctx = BuildContext();
 
-        // Global cooldown.
+        // 1. Global cooldown
         if (ability.triggersGCD && Time.time < gcdEnd)
-            return false;                      // silent, spamming during GCD is normal
+            return false;
 
-        // Already casting.
-        if (IsCasting)
+        // 2. State-based validation (already busy)
+        if (ActionState == PlayerActionState.Casting)
         {
             Block("Already casting");
             return false;
         }
 
-        // Ability cooldown.
+        // 3. Ability specific cooldown
         if (GetCooldownRemaining(ability) > 0f)
-            return false;                      // silent
+            return false;
 
-        // Ability-specific validation.
+        // 4. Ability condition validation (range, facing, resource)
         string reason = ability.GetBlockReason(ctx);
         if (reason != null)
         {
@@ -163,7 +200,7 @@ public class PlayerAbilities : MonoBehaviour
             return false;
         }
 
-        // Instant abilities fire now. Cast-time abilities start a cast.
+        // 5. Fire instant or begin cast
         if (ability.castTime <= 0f)
             Commit(ability, ctx);
         else
@@ -174,12 +211,13 @@ public class PlayerAbilities : MonoBehaviour
 
     private void StartCast(Ability ability)
     {
-        IsCasting = true;
+        SetState(PlayerActionState.Casting);
+
         CastingAbility = ability;
         CastStartTime = Time.time;
         CastEndTime = Time.time + ability.castTime;
 
-        // GCD applies at the start of the cast, as in WoW.
+        // GCD applies at the start of the cast
         if (ability.triggersGCD)
             gcdEnd = Time.time + globalCooldown;
 
@@ -188,11 +226,11 @@ public class PlayerAbilities : MonoBehaviour
 
     private void TickCast()
     {
-        if (!IsCasting) return;
+        if (ActionState != PlayerActionState.Casting) return;
 
         var ctx = BuildContext();
 
-        // Target died or wandered out of range mid-cast.
+        // Target died or wandered out of range mid-cast
         string reason = CastingAbility.GetBlockReason(ctx);
         if (reason != null && reason != $"Not enough {stats.powerType}")
         {
@@ -200,6 +238,7 @@ public class PlayerAbilities : MonoBehaviour
             return;
         }
 
+        // Movement interrupt check
         if (movementCancelsCast && !CastingAbility.usableWhileMoving && IsMoving())
         {
             CancelCast("Interrupted by movement");
@@ -208,13 +247,13 @@ public class PlayerAbilities : MonoBehaviour
 
         if (Time.time < CastEndTime) return;
 
+        // Cast complete
         Ability finished = CastingAbility;
         ClearCast();
         Commit(finished, BuildContext());
         OnCastCompleted?.Invoke(finished);
     }
 
-    /// <summary>Spends power, starts the cooldown, and runs the effect.</summary>
     private void Commit(Ability ability, AbilityContext ctx)
     {
         if (ability.powerCost > 0f && !stats.TrySpendPower(ability.powerCost))
@@ -226,16 +265,19 @@ public class PlayerAbilities : MonoBehaviour
         if (ability.cooldown > 0f)
             cooldownEnd[ability] = Time.time + ability.cooldown;
 
-        // Instants take the GCD here; casts already took it at cast start.
         if (ability.triggersGCD && ability.castTime <= 0f)
             gcdEnd = Time.time + globalCooldown;
 
         ability.Execute(ctx);
+
+        // If this ability doesn't transition to a channel/performance state, remain Available
+        if (ActionState != PlayerActionState.Dead && ActionState != PlayerActionState.Casting)
+            SetState(PlayerActionState.Available);
     }
 
     public void CancelCast(string reason)
     {
-        if (!IsCasting) return;
+        if (ActionState != PlayerActionState.Casting) return;
 
         ClearCast();
         OnCastCancelled?.Invoke(reason);
@@ -244,10 +286,12 @@ public class PlayerAbilities : MonoBehaviour
 
     private void ClearCast()
     {
-        IsCasting = false;
         CastingAbility = null;
         CastStartTime = 0f;
         CastEndTime = 0f;
+
+        if (ActionState != PlayerActionState.Dead)
+            SetState(PlayerActionState.Available);
     }
 
     private bool IsMoving()
@@ -272,7 +316,7 @@ public class PlayerAbilities : MonoBehaviour
         if (logBlockReasons) Debug.Log($"Cannot use: {reason}");
     }
 
-    // ---- Queries for UI ----
+    // ---- Queries for UI & Other Systems ----
 
     public float GetCooldownRemaining(Ability ability)
     {
@@ -284,7 +328,6 @@ public class PlayerAbilities : MonoBehaviour
 
     public float GCDRemaining => Mathf.Max(0f, gcdEnd - Time.time);
 
-    /// <summary>0 = ready, 1 = just started. Includes the GCD sweep.</summary>
     public float GetSweepFraction(int slot)
     {
         Ability a = slots[slot];
@@ -301,9 +344,10 @@ public class PlayerAbilities : MonoBehaviour
         return Mathf.Clamp01(Mathf.Max(abilityFrac, gcdFrac));
     }
 
-    /// <summary>True when the slot could be used right now, for the UI tint.</summary>
     public bool IsSlotUsable(int slot)
     {
+        if (ActionState == PlayerActionState.Dead) return false;
+
         Ability a = slots[slot];
         if (a == null) return false;
         if (GetCooldownRemaining(a) > 0f) return false;
