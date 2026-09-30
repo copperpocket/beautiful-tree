@@ -12,17 +12,19 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: cd10faf6e47a84a4ea991e3855e0dc62, type: 3}
   m_Name: AB_Mend
   m_EditorClassIdentifier: Assembly-CSharp::HealAbility
-  displayName: New Ability
-  description: 
+  displayName: Mend
+  description: Restore your own health. Cannot be cast while moving.
   icon: {fileID: 0}
-  iconTint: {r: 0.35, g: 0.45, b: 0.65, a: 1}
-  powerCost: 0
+  iconTint: {r: 0.4, g: 0.9, b: 0.5, a: 1}
+  animationType: 4
+  animatorTrigger: 
+  powerCost: 30
   cooldown: 0
-  castTime: 0
+  castTime: 1.5
   triggersGCD: 1
   usableWhileMoving: 0
-  requiresTarget: 1
+  requiresTarget: 0
   range: 5
   requiresFacing: 1
   facingTolerance: 100
-  amount: 30
+  amount: 35

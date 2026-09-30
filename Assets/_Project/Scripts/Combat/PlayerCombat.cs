@@ -21,7 +21,7 @@ public class PlayerCombat : MonoBehaviour
     [Header("State")]
     [Tooltip("Read-only. True while auto-attacking.")]
     public bool inCombat;
-
+    public event System.Action<Ability> OnAttackAnimationRequested;
     private PlayerTargeting targeting;
     private PlayerStats stats;
     private float nextSwingTime;

@@ -68,7 +68,7 @@ public class PlayerAbilities : MonoBehaviour
     private PlayerTargeting targeting;
     private PlayerCombat combat;
     private CharacterController controller;
-
+    private AnimationBridge animationBridge;
     private readonly Dictionary<Ability, float> cooldownEnd = new();
     private float gcdEnd;
 
@@ -78,6 +78,7 @@ public class PlayerAbilities : MonoBehaviour
         targeting = GetComponent<PlayerTargeting>();
         combat = GetComponent<PlayerCombat>();
         controller = GetComponent<CharacterController>();
+        animationBridge = GetComponent<AnimationBridge>();
 
         if (slots == null || slots.Length != SlotCount)
         {
@@ -267,6 +268,9 @@ public class PlayerAbilities : MonoBehaviour
 
         if (ability.triggersGCD && ability.castTime <= 0f)
             gcdEnd = Time.time + globalCooldown;
+            
+        if (ability.castTime <= 0f)
+            animationBridge?.NotifyAbility(ability);
 
         ability.Execute(ctx);
 

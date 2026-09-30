@@ -16,6 +16,8 @@ MonoBehaviour:
   description: 
   icon: {fileID: 0}
   iconTint: {r: 0.35, g: 0.45, b: 0.65, a: 1}
+  animationType: 3
+  animatorTrigger: 
   powerCost: 0
   cooldown: 0
   castTime: 0

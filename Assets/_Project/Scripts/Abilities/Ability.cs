@@ -23,6 +23,12 @@ public abstract class Ability : ScriptableObject
     [Tooltip("Used as the slot colour when no icon is assigned.")]
     public Color iconTint = new Color(0.35f, 0.45f, 0.65f);
 
+    [Header("Animation")]
+    public AbilityAnimation animationType = AbilityAnimation.None;
+
+    [Tooltip("Optional Animator trigger. Leave empty to use the animation type.")]
+    public string animatorTrigger = "";
+
     [Header("Cost and Timing")]
     public float powerCost = 0f;
     [Tooltip("Seconds before this ability can be used again. 0 = no cooldown.")]
