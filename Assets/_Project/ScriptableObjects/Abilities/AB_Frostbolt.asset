@@ -12,22 +12,22 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: b124c9ec1a0e49545a7f30874e8d495f, type: 3}
   m_Name: AB_Frostbolt
   m_EditorClassIdentifier: Assembly-CSharp::DamageAbility
-  displayName: New Ability
-  description: 
+  displayName: Frost Bolt
+  description: A fast shard of ice. Can be cast on the move.
   icon: {fileID: 0}
-  iconTint: {r: 0.35, g: 0.45, b: 0.65, a: 1}
+  iconTint: {r: 0.4, g: 0.75, b: 1, a: 1}
   animationType: 3
   animatorTrigger: 
-  powerCost: 0
-  cooldown: 0
+  powerCost: 12
+  cooldown: 6
   castTime: 0
   triggersGCD: 1
-  usableWhileMoving: 0
+  usableWhileMoving: 1
   requiresTarget: 1
-  range: 5
+  range: 25
   requiresFacing: 1
   facingTolerance: 100
-  damage: 20
+  damage: 14
   variance: 0.12
   critChance: 0.1
   critMultiplier: 2

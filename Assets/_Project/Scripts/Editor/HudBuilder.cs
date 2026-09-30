@@ -211,6 +211,13 @@ public static class HudBuilder
         heal.requiresTarget = false;
         heal.amount = 35f;
 
+        // Mark every asset as changed so SaveAssets actually writes it to disk.
+        EditorUtility.SetDirty(auto);
+        EditorUtility.SetDirty(strike);
+        EditorUtility.SetDirty(fireball);
+        EditorUtility.SetDirty(bolt);
+        EditorUtility.SetDirty(heal);
+
         AssetDatabase.SaveAssets();
         AssetDatabase.Refresh();
 

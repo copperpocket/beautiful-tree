@@ -19,7 +19,7 @@ MonoBehaviour:
   animationType: 4
   animatorTrigger: 
   powerCost: 30
-  cooldown: 0
+  cooldown: 10
   castTime: 1.5
   triggersGCD: 1
   usableWhileMoving: 0

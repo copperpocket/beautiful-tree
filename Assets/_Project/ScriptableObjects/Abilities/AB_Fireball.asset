@@ -12,22 +12,22 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: b124c9ec1a0e49545a7f30874e8d495f, type: 3}
   m_Name: AB_Fireball
   m_EditorClassIdentifier: Assembly-CSharp::DamageAbility
-  displayName: New Ability
-  description: 
+  displayName: Fireball
+  description: Hurl a slow but heavy ball of flame.
   icon: {fileID: 0}
-  iconTint: {r: 0.35, g: 0.45, b: 0.65, a: 1}
+  iconTint: {r: 1, g: 0.55, b: 0.15, a: 1}
   animationType: 3
   animatorTrigger: 
-  powerCost: 0
+  powerCost: 25
   cooldown: 0
-  castTime: 0
+  castTime: 2
   triggersGCD: 1
   usableWhileMoving: 0
   requiresTarget: 1
-  range: 5
+  range: 30
   requiresFacing: 1
   facingTolerance: 100
-  damage: 20
+  damage: 35
   variance: 0.12
-  critChance: 0.1
+  critChance: 0.15
   critMultiplier: 2

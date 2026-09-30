@@ -12,22 +12,22 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: b124c9ec1a0e49545a7f30874e8d495f, type: 3}
   m_Name: AB_Strike
   m_EditorClassIdentifier: Assembly-CSharp::DamageAbility
-  displayName: New Ability
-  description: 
+  displayName: Strike
+  description: A quick melee blow.
   icon: {fileID: 0}
-  iconTint: {r: 0.35, g: 0.45, b: 0.65, a: 1}
+  iconTint: {r: 0.85, g: 0.35, b: 0.25, a: 1}
   animationType: 2
   animatorTrigger: 
-  powerCost: 0
-  cooldown: 0
+  powerCost: 15
+  cooldown: 4
   castTime: 0
   triggersGCD: 1
   usableWhileMoving: 0
   requiresTarget: 1
-  range: 5
+  range: 3
   requiresFacing: 1
   facingTolerance: 100
-  damage: 20
+  damage: 18
   variance: 0.12
   critChance: 0.1
   critMultiplier: 2

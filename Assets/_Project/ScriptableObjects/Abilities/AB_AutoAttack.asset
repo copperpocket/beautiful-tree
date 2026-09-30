@@ -12,18 +12,18 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: fec8016c178e6e1489e917bf3b413fff, type: 3}
   m_Name: AB_AutoAttack
   m_EditorClassIdentifier: Assembly-CSharp::AutoAttackAbility
-  displayName: New Ability
-  description: 
+  displayName: Auto Attack
+  description: Toggle melee swings against your target.
   icon: {fileID: 0}
-  iconTint: {r: 0.35, g: 0.45, b: 0.65, a: 1}
+  iconTint: {r: 0.72, g: 0.7, b: 0.66, a: 1}
   animationType: 1
   animatorTrigger: 
   powerCost: 0
   cooldown: 0
   castTime: 0
-  triggersGCD: 1
+  triggersGCD: 0
   usableWhileMoving: 0
   requiresTarget: 1
-  range: 5
-  requiresFacing: 1
+  range: 100
+  requiresFacing: 0
   facingTolerance: 100
