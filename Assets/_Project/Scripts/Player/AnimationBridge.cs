@@ -32,29 +32,23 @@ public class AnimationBridge : MonoBehaviour
     [Header("Movement")]
     public float speedMultiplier = 1f;
 
+    [Header("Jump")]
+    [Tooltip("Seconds after takeoff that the Animator is told we're airborne, " +
+             "even if the controller still reports grounded.")]
+    public float jumpAirborneGrace = 0.15f;
+
     [Header("Travel Facing")]
-    [Tooltip("While walking forward or sideways, turn the model toward travel direction.")]
     public bool faceWalkDirection = true;
-
-    [Tooltip("While running forward or sideways, turn the model toward travel direction.")]
     public bool faceRunDirection = true;
-
-    [Tooltip("While backing up diagonally, turn the model so its back faces travel direction.")]
     public bool faceBackwardDirection = true;
 
     [Tooltip("The object to rotate. Drag the Player's 'Visual' child here.")]
     public Transform visualRoot;
 
-    [Tooltip("Degrees per second the model turns.")]
     public float facingTurnSpeed = 720f;
 
-    [Tooltip("Largest turn allowed when moving forward or sideways. 90 = full sideways.")]
-    [Range(0f, 90f)]
-    public float maxFacingAngle = 90f;
-
-    [Tooltip("Largest turn allowed when backing up. 45 covers the diagonals.")]
-    [Range(0f, 90f)]
-    public float maxBackwardAngle = 45f;
+    [Range(0f, 90f)] public float maxFacingAngle = 90f;
+    [Range(0f, 90f)] public float maxBackwardAngle = 45f;
 
     private PlayerAbilities abilities;
     private PlayerStats stats;
@@ -71,7 +65,6 @@ public class AnimationBridge : MonoBehaviour
         movement = GetComponent<PlayerMovement>();
         controller = GetComponent<CharacterController>();
 
-        // Remember the authored rotation, e.g. if Visual is set to 180.
         if (visualRoot != null)
             visualBaseRotation = visualRoot.localRotation;
     }
@@ -100,7 +93,8 @@ public class AnimationBridge : MonoBehaviour
             stats.OnDeath -= HandleDeath;
     }
 
-    void Update()
+    // LateUpdate so we read movement state after PlayerMovement has moved this frame.
+    void LateUpdate()
     {
         if (animator == null)
             return;
@@ -134,22 +128,14 @@ public class AnimationBridge : MonoBehaviour
         {
             if (backward && faceBackwardDirection)
             {
-                // Point the model's back toward travel direction.
-                // S = 0, S + E = -45, S + Q = +45.
                 targetAngle = Mathf.Atan2(-input.x, -input.y) * Mathf.Rad2Deg;
                 targetAngle = Mathf.Clamp(targetAngle, -maxBackwardAngle, maxBackwardAngle);
-
-                // Play the straight backpedal clip.
                 animInput = new Vector2(0f, -amount);
             }
             else if (!backward && useForwardFacing)
             {
-                // Point the model's front toward travel direction.
-                // W = 0, E = +90, Q = -90.
                 targetAngle = Mathf.Atan2(input.x, input.y) * Mathf.Rad2Deg;
                 targetAngle = Mathf.Clamp(targetAngle, -maxFacingAngle, maxFacingAngle);
-
-                // Play the straight forward clip.
                 animInput = new Vector2(0f, amount);
             }
         }
@@ -160,7 +146,11 @@ public class AnimationBridge : MonoBehaviour
         SetFloatIfPresent(moveXParameter, animInput.x * speed);
         SetFloatIfPresent(moveYParameter, animInput.y * speed);
 
-        bool grounded = controller == null || controller.isGrounded;
+        // Airborne for a short grace after takeoff, so the Animator never sees
+        // "grounded" on the jump frame and skips straight to the landing.
+        bool justJumped = Time.time - movement.LastJumpTime < jumpAirborneGrace;
+        bool grounded = movement.IsGrounded && !justJumped;
+
         SetBoolIfPresent(groundedParameter, grounded);
     }
 

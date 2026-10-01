@@ -4,8 +4,8 @@ using UnityEngine.InputSystem;
 /// <summary>
 /// WoW-style movement. Runs by default; WalkToggle switches to walking.
 /// AutoRun toggles hands-free forward movement, cancelled by W, S, or
-/// starting a both-mouse-button run. Movement and jumping cost no stamina.
-/// Attach to the Player.
+/// starting a both-mouse-button run. Horizontal momentum carries through
+/// jumps and falls. Attach to the Player.
 /// </summary>
 [RequireComponent(typeof(CharacterController))]
 [RequireComponent(typeof(PlayerInput))]
@@ -37,6 +37,11 @@ public class PlayerMovement : MonoBehaviour
     public float coyoteTime = 0.12f;
     public float jumpBuffer = 0.15f;
 
+    [Header("Air Control")]
+    [Tooltip("How quickly input can change your velocity in the air, in m/s per second. " +
+             "0 = pure momentum, no steering. Higher = more control.")]
+    public float airControl = 2f;
+
     [Header("Fall Damage")]
     public bool enableFallDamage = true;
     public float safeLandingSpeed = 12f;
@@ -50,6 +55,12 @@ public class PlayerMovement : MonoBehaviour
 
     /// <summary>True while autorun is active.</summary>
     public bool IsAutoRunning { get; private set; }
+
+    /// <summary>Grounded state from this frame's Move call.</summary>
+    public bool IsGrounded => groundedNow;
+
+    /// <summary>Time.time of the last successful jump.</summary>
+    public float LastJumpTime { get; private set; } = -99f;
 
     // Read by AnimationBridge for immediate directional animation response.
     public Vector2 AnimationMoveInput { get; private set; }
@@ -67,6 +78,7 @@ public class PlayerMovement : MonoBehaviour
     private InputAction orbitAction;
     private InputAction steerAction;
 
+    private Vector3 horizontalVelocity;
     private float verticalVelocity;
     private float previousVerticalVelocity;
     private float lastGroundedTime = -99f;
@@ -90,7 +102,6 @@ public class PlayerMovement : MonoBehaviour
         orbitAction  = playerInput.actions["OrbitCamera"];
         steerAction  = playerInput.actions["SteerCharacter"];
 
-        // FindAction returns null instead of throwing if the action is missing.
         walkToggleAction = playerInput.actions.FindAction("WalkToggle");
         if (walkToggleAction == null)
             Debug.LogWarning("PlayerMovement: no 'WalkToggle' action found. " +
@@ -122,7 +133,7 @@ public class PlayerMovement : MonoBehaviour
         Vector2 move = moveAction.ReadValue<Vector2>();
         float strafe = strafeAction.ReadValue<float>();
 
-        // Both mouse buttons: work out whether they are moving us forward this frame.
+        // Both mouse buttons: are they moving us forward this frame?
         bool bothDown =
             bothButtonsRunForward &&
             orbitAction.IsPressed() &&
@@ -145,8 +156,6 @@ public class PlayerMovement : MonoBehaviour
         }
 
         // Cancel autorun on a NEW W/S press or the moment a both-button run starts.
-        // Only the start counts, so holding either while turning autorun on doesn't
-        // instantly cancel it.
         bool forwardPressedNow =
             Mathf.Abs(move.y) > 0.01f && Mathf.Abs(previousRawForward) <= 0.01f;
         previousRawForward = move.y;
@@ -160,7 +169,6 @@ public class PlayerMovement : MonoBehaviour
         if (dead)
             IsAutoRunning = false;
 
-        // Apply forward movement from autorun or the mouse buttons.
         if (IsAutoRunning || bothEngaged)
             move.y = 1f;
 
@@ -172,15 +180,14 @@ public class PlayerMovement : MonoBehaviour
         if (!dead && Mathf.Abs(turn) > 0.01f)
             transform.Rotate(0f, turn * turnRate * Time.deltaTime, 0f);
 
-        // 2. Horizontal direction along the character's own axes.
+        // 2. Desired horizontal direction along the character's own axes.
         Vector3 moveDir = transform.forward * move.y + transform.right * strafe;
         if (moveDir.sqrMagnitude > 1f) moveDir.Normalize();
         if (dead) moveDir = Vector3.zero;
 
-        // 3. Speed: run by default, walk when toggled. No stamina cost.
+        // 3. Speed: run by default, walk when toggled.
         float baseSpeed = IsWalking ? walkSpeed : runSpeed;
 
-        // Animation values use the base speed so the blend tree positions stay simple.
         Vector2 animationInput = new Vector2(strafe, move.y);
         if (animationInput.sqrMagnitude > 1f) animationInput.Normalize();
 
@@ -190,7 +197,28 @@ public class PlayerMovement : MonoBehaviour
         float speed = baseSpeed;
         if (move.y < -0.01f) speed *= backSpeedMultiplier;
 
-        // 4. Always poll jump so a press on a bad frame is remembered.
+        // 4. Horizontal velocity. On the ground it follows input directly.
+        //    In the air it keeps its momentum, and input only nudges it.
+        Vector3 desiredVelocity = moveDir * speed;
+
+        if (dead)
+        {
+            horizontalVelocity = Vector3.zero;
+        }
+        else if (groundedNow)
+        {
+            horizontalVelocity = desiredVelocity;
+        }
+        else if (desiredVelocity.sqrMagnitude > 0.01f)
+        {
+            horizontalVelocity = Vector3.MoveTowards(
+                horizontalVelocity,
+                desiredVelocity,
+                airControl * Time.deltaTime);
+        }
+        // No input in the air: keep horizontalVelocity unchanged.
+
+        // 5. Always poll jump so a press on a bad frame is remembered.
         if (jumpAction.WasPressedThisFrame())
         {
             lastJumpPressedTime = Time.time;
@@ -203,13 +231,13 @@ public class PlayerMovement : MonoBehaviour
         if (groundedNow)
             lastGroundedTime = Time.time;
 
-        // 5. Gravity, with a small downward bias while grounded.
+        // 6. Gravity, with a small downward bias while grounded.
         if (groundedNow && verticalVelocity < 0f)
             verticalVelocity = -2f;
         else
             verticalVelocity += gravity * Time.deltaTime;
 
-        // 6. Jump if pressed recently and grounded recently. No stamina cost.
+        // 7. Jump if pressed recently and grounded recently.
         bool wantsJump = Time.time - lastJumpPressedTime <= jumpBuffer;
         bool canJump   = Time.time - lastGroundedTime    <= coyoteTime;
 
@@ -218,15 +246,16 @@ public class PlayerMovement : MonoBehaviour
             verticalVelocity = Mathf.Sqrt(jumpHeight * -2f * gravity);
             lastJumpPressedTime = -99f;
             lastGroundedTime    = -99f;
+            LastJumpTime = Time.time;
 
             animationBridge?.NotifyJump();
         }
 
-        // 7. One Move call per frame.
-        Vector3 velocity = moveDir * speed + Vector3.up * verticalVelocity;
+        // 8. One Move call per frame.
+        Vector3 velocity = horizontalVelocity + Vector3.up * verticalVelocity;
         controller.Move(velocity * Time.deltaTime);
 
-        // 8. Read grounded once, then check for a hard landing.
+        // 9. Read grounded once, then check for a hard landing.
         bool wasAirborne = !groundedNow;
         groundedNow = controller.isGrounded;
 
