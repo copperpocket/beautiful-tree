@@ -115,6 +115,26 @@
                     "interactions": "",
                     "initialStateCheck": false,
                     "priority": 0
+                },
+                {
+                    "name": "WalkToggle",
+                    "type": "Button",
+                    "id": "86257533-452f-41dd-9501-f3b24d936879",
+                    "expectedControlType": "",
+                    "processors": "",
+                    "interactions": "",
+                    "initialStateCheck": false,
+                    "priority": 0
+                },
+                {
+                    "name": "AutoRun",
+                    "type": "Button",
+                    "id": "8ed1dcdd-b6bc-46bb-8f1a-084c0f17b47d",
+                    "expectedControlType": "",
+                    "processors": "",
+                    "interactions": "",
+                    "initialStateCheck": false,
+                    "priority": 0
                 }
             ],
             "bindings": [
@@ -357,6 +377,28 @@
                     "processors": "",
                     "groups": "",
                     "action": "ClearTarget",
+                    "isComposite": false,
+                    "isPartOfComposite": false
+                },
+                {
+                    "name": "",
+                    "id": "74a78901-00e7-42c3-8a6b-8a6cc3a4cc38",
+                    "path": "<Keyboard>/numpadDivide",
+                    "interactions": "",
+                    "processors": "",
+                    "groups": "",
+                    "action": "WalkToggle",
+                    "isComposite": false,
+                    "isPartOfComposite": false
+                },
+                {
+                    "name": "",
+                    "id": "741ae725-ae59-4b72-86f0-b00f011ee5fb",
+                    "path": "<Keyboard>/numLock",
+                    "interactions": "",
+                    "processors": "",
+                    "groups": "",
+                    "action": "AutoRun",
                     "isComposite": false,
                     "isPartOfComposite": false
                 }

@@ -10606,6 +10606,13 @@ MonoBehaviour:
   spellCastTrigger: SpellCast
   healTrigger: Heal
   speedMultiplier: 1
+  faceWalkDirection: 1
+  faceRunDirection: 1
+  faceBackwardDirection: 1
+  visualRoot: {fileID: 856940906}
+  facingTurnSpeed: 540
+  maxFacingAngle: 90
+  maxBackwardAngle: 45
 --- !u!1 &1966015654
 GameObject:
   m_ObjectHideFlags: 0

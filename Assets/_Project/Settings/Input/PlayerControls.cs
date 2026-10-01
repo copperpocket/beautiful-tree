@@ -201,6 +201,26 @@ public partial class @PlayerControls: IInputActionCollection2, IDisposable
                     ""interactions"": """",
                     ""initialStateCheck"": false,
                     ""priority"": 0
+                },
+                {
+                    ""name"": ""WalkToggle"",
+                    ""type"": ""Button"",
+                    ""id"": ""86257533-452f-41dd-9501-f3b24d936879"",
+                    ""expectedControlType"": """",
+                    ""processors"": """",
+                    ""interactions"": """",
+                    ""initialStateCheck"": false,
+                    ""priority"": 0
+                },
+                {
+                    ""name"": ""AutoRun"",
+                    ""type"": ""Button"",
+                    ""id"": ""8ed1dcdd-b6bc-46bb-8f1a-084c0f17b47d"",
+                    ""expectedControlType"": """",
+                    ""processors"": """",
+                    ""interactions"": """",
+                    ""initialStateCheck"": false,
+                    ""priority"": 0
                 }
             ],
             ""bindings"": [
@@ -445,6 +465,28 @@ public partial class @PlayerControls: IInputActionCollection2, IDisposable
                     ""action"": ""ClearTarget"",
                     ""isComposite"": false,
                     ""isPartOfComposite"": false
+                },
+                {
+                    ""name"": """",
+                    ""id"": ""74a78901-00e7-42c3-8a6b-8a6cc3a4cc38"",
+                    ""path"": ""<Keyboard>/numpadDivide"",
+                    ""interactions"": """",
+                    ""processors"": """",
+                    ""groups"": """",
+                    ""action"": ""WalkToggle"",
+                    ""isComposite"": false,
+                    ""isPartOfComposite"": false
+                },
+                {
+                    ""name"": """",
+                    ""id"": ""741ae725-ae59-4b72-86f0-b00f011ee5fb"",
+                    ""path"": ""<Keyboard>/numLock"",
+                    ""interactions"": """",
+                    ""processors"": """",
+                    ""groups"": """",
+                    ""action"": ""AutoRun"",
+                    ""isComposite"": false,
+                    ""isPartOfComposite"": false
                 }
             ]
         }
@@ -464,6 +506,8 @@ public partial class @PlayerControls: IInputActionCollection2, IDisposable
         m_Player_Strafe = m_Player.FindAction("Strafe", throwIfNotFound: true);
         m_Player_TargetNearest = m_Player.FindAction("TargetNearest", throwIfNotFound: true);
         m_Player_ClearTarget = m_Player.FindAction("ClearTarget", throwIfNotFound: true);
+        m_Player_WalkToggle = m_Player.FindAction("WalkToggle", throwIfNotFound: true);
+        m_Player_AutoRun = m_Player.FindAction("AutoRun", throwIfNotFound: true);
     }
 
     ~@PlayerControls()
@@ -555,6 +599,8 @@ public partial class @PlayerControls: IInputActionCollection2, IDisposable
     private readonly InputAction m_Player_Strafe;
     private readonly InputAction m_Player_TargetNearest;
     private readonly InputAction m_Player_ClearTarget;
+    private readonly InputAction m_Player_WalkToggle;
+    private readonly InputAction m_Player_AutoRun;
     /// <summary>
     /// Provides access to input actions defined in input action map "Player".
     /// </summary>
@@ -610,6 +656,14 @@ public partial class @PlayerControls: IInputActionCollection2, IDisposable
         /// Provides access to the underlying input action "Player/ClearTarget".
         /// </summary>
         public InputAction @ClearTarget => m_Wrapper.m_Player_ClearTarget;
+        /// <summary>
+        /// Provides access to the underlying input action "Player/WalkToggle".
+        /// </summary>
+        public InputAction @WalkToggle => m_Wrapper.m_Player_WalkToggle;
+        /// <summary>
+        /// Provides access to the underlying input action "Player/AutoRun".
+        /// </summary>
+        public InputAction @AutoRun => m_Wrapper.m_Player_AutoRun;
         /// <summary>
         /// Provides access to the underlying input action map instance.
         /// </summary>
@@ -669,6 +723,12 @@ public partial class @PlayerControls: IInputActionCollection2, IDisposable
             @ClearTarget.started += instance.OnClearTarget;
             @ClearTarget.performed += instance.OnClearTarget;
             @ClearTarget.canceled += instance.OnClearTarget;
+            @WalkToggle.started += instance.OnWalkToggle;
+            @WalkToggle.performed += instance.OnWalkToggle;
+            @WalkToggle.canceled += instance.OnWalkToggle;
+            @AutoRun.started += instance.OnAutoRun;
+            @AutoRun.performed += instance.OnAutoRun;
+            @AutoRun.canceled += instance.OnAutoRun;
         }
 
         /// <summary>
@@ -713,6 +773,12 @@ public partial class @PlayerControls: IInputActionCollection2, IDisposable
             @ClearTarget.started -= instance.OnClearTarget;
             @ClearTarget.performed -= instance.OnClearTarget;
             @ClearTarget.canceled -= instance.OnClearTarget;
+            @WalkToggle.started -= instance.OnWalkToggle;
+            @WalkToggle.performed -= instance.OnWalkToggle;
+            @WalkToggle.canceled -= instance.OnWalkToggle;
+            @AutoRun.started -= instance.OnAutoRun;
+            @AutoRun.performed -= instance.OnAutoRun;
+            @AutoRun.canceled -= instance.OnAutoRun;
         }
 
         /// <summary>
@@ -830,5 +896,19 @@ public partial class @PlayerControls: IInputActionCollection2, IDisposable
         /// <seealso cref="UnityEngine.InputSystem.InputAction.performed" />
         /// <seealso cref="UnityEngine.InputSystem.InputAction.canceled" />
         void OnClearTarget(InputAction.CallbackContext context);
+        /// <summary>
+        /// Method invoked when associated input action "WalkToggle" is either <see cref="UnityEngine.InputSystem.InputAction.started" />, <see cref="UnityEngine.InputSystem.InputAction.performed" /> or <see cref="UnityEngine.InputSystem.InputAction.canceled" />.
+        /// </summary>
+        /// <seealso cref="UnityEngine.InputSystem.InputAction.started" />
+        /// <seealso cref="UnityEngine.InputSystem.InputAction.performed" />
+        /// <seealso cref="UnityEngine.InputSystem.InputAction.canceled" />
+        void OnWalkToggle(InputAction.CallbackContext context);
+        /// <summary>
+        /// Method invoked when associated input action "AutoRun" is either <see cref="UnityEngine.InputSystem.InputAction.started" />, <see cref="UnityEngine.InputSystem.InputAction.performed" /> or <see cref="UnityEngine.InputSystem.InputAction.canceled" />.
+        /// </summary>
+        /// <seealso cref="UnityEngine.InputSystem.InputAction.started" />
+        /// <seealso cref="UnityEngine.InputSystem.InputAction.performed" />
+        /// <seealso cref="UnityEngine.InputSystem.InputAction.canceled" />
+        void OnAutoRun(InputAction.CallbackContext context);
     }
 }
