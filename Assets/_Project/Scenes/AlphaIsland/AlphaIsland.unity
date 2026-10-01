@@ -10407,7 +10407,7 @@ Transform:
   m_GameObject: {fileID: 1943445326}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0, y: 1.95, z: 0}
+  m_LocalPosition: {x: 0, y: 1.123, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children:
@@ -10431,6 +10431,7 @@ MonoBehaviour:
   runSpeed: 6
   backSpeedMultiplier: 0.65
   turnRate: 180
+  startWalking: 0
   adStrafes: 1
   bothButtonsRunForward: 1
   bothButtonsDelay: 0.06
@@ -10438,8 +10439,7 @@ MonoBehaviour:
   gravity: -20
   coyoteTime: 0.12
   jumpBuffer: 0.15
-  sprintStaminaPerSecond: 22
-  jumpStaminaCost: 12
+  airControl: 2
   enableFallDamage: 1
   safeLandingSpeed: 12
   fallDamagePerUnitSpeed: 4
@@ -10606,6 +10606,12 @@ MonoBehaviour:
   spellCastTrigger: SpellCast
   healTrigger: Heal
   speedMultiplier: 1
+  jumpAirborneGrace: 0.15
+  fallGraceTime: 0.15
+  groundProbeDistance: 0.4
+  groundProbeMask:
+    serializedVersion: 2
+    m_Bits: 4294967295
   faceWalkDirection: 1
   faceRunDirection: 1
   faceBackwardDirection: 1

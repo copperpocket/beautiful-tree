@@ -62,6 +62,9 @@ public class PlayerMovement : MonoBehaviour
     /// <summary>Time.time of the last successful jump.</summary>
     public float LastJumpTime { get; private set; } = -99f;
 
+    /// <summary>Time.time of the last frame the controller was grounded.</summary>
+    public float LastTimeGrounded { get; private set; } = -99f;
+
     // Read by AnimationBridge for immediate directional animation response.
     public Vector2 AnimationMoveInput { get; private set; }
     public float AnimationMoveSpeed { get; private set; }
@@ -258,6 +261,9 @@ public class PlayerMovement : MonoBehaviour
         // 9. Read grounded once, then check for a hard landing.
         bool wasAirborne = !groundedNow;
         groundedNow = controller.isGrounded;
+
+        if (groundedNow)
+            LastTimeGrounded = Time.time;
 
         if (enableFallDamage && stats != null && groundedNow && wasAirborne)
         {

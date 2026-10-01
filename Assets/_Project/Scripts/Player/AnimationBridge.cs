@@ -4,6 +4,7 @@ using UnityEngine;
 /// Converts gameplay movement and ability events into Animator parameters.
 /// Turns the visual model toward the direction of travel and plays a single
 /// forward or backward clip instead of strafe and diagonal clips.
+/// Filters grounded flicker so ramps and small steps don't trigger falling.
 /// Attach to the Player root.
 /// </summary>
 [RequireComponent(typeof(PlayerAbilities))]
@@ -36,6 +37,18 @@ public class AnimationBridge : MonoBehaviour
     [Tooltip("Seconds after takeoff that the Animator is told we're airborne, " +
              "even if the controller still reports grounded.")]
     public float jumpAirborneGrace = 0.15f;
+
+    [Header("Falling")]
+    [Tooltip("Seconds off the ground before the Animator treats it as a fall. " +
+             "Hides one-frame grounded flicker on ramps.")]
+    public float fallGraceTime = 0.15f;
+
+    [Tooltip("If ground is within this distance below the feet, still count as grounded. " +
+             "Covers walking down ramps and stepping off small ledges.")]
+    public float groundProbeDistance = 0.4f;
+
+    [Tooltip("Layers the ground probe can hit. Set to Environment.")]
+    public LayerMask groundProbeMask = ~0;
 
     [Header("Travel Facing")]
     public bool faceWalkDirection = true;
@@ -146,12 +159,36 @@ public class AnimationBridge : MonoBehaviour
         SetFloatIfPresent(moveXParameter, animInput.x * speed);
         SetFloatIfPresent(moveYParameter, animInput.y * speed);
 
-        // Airborne for a short grace after takeoff, so the Animator never sees
-        // "grounded" on the jump frame and skips straight to the landing.
+        // Grounded as the Animator sees it:
+        // - Always airborne right after a jump, so takeoff is never skipped.
+        // - Otherwise grounded if the controller says so, if we left the ground
+        //   only a moment ago, or if ground is just below our feet.
         bool justJumped = Time.time - movement.LastJumpTime < jumpAirborneGrace;
-        bool grounded = movement.IsGrounded && !justJumped;
+        bool recentlyGrounded = Time.time - movement.LastTimeGrounded < fallGraceTime;
+
+        bool grounded = !justJumped &&
+                        (movement.IsGrounded || recentlyGrounded || ProbeGround());
 
         SetBoolIfPresent(groundedParameter, grounded);
+    }
+
+    /// <summary>Short ray down from the feet. True if ground is close below.</summary>
+    private bool ProbeGround()
+    {
+        if (controller == null)
+            return false;
+
+        // Bottom of the capsule in world space, nudged up so the ray starts inside it.
+        Vector3 centre = transform.TransformPoint(controller.center);
+        Vector3 feet = centre - Vector3.up * (controller.height * 0.5f);
+        Vector3 origin = feet + Vector3.up * 0.1f;
+
+        return Physics.Raycast(
+            origin,
+            Vector3.down,
+            groundProbeDistance + 0.1f,
+            groundProbeMask,
+            QueryTriggerInteraction.Ignore);
     }
 
     private void UpdateVisualFacing(float targetAngle)
