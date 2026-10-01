@@ -1,8 +1,10 @@
+using System;
 using UnityEngine;
 
 /// <summary>
 /// Auto-attack swing loop. Engaged and disengaged by AutoAttackAbility or by
-/// right-clicking an enemy. Attach to the Player.
+/// right-clicking an enemy. Raises OnSwing each swing for animation.
+/// Attach to the Player.
 /// </summary>
 [RequireComponent(typeof(PlayerTargeting))]
 public class PlayerCombat : MonoBehaviour
@@ -21,7 +23,10 @@ public class PlayerCombat : MonoBehaviour
     [Header("State")]
     [Tooltip("Read-only. True while auto-attacking.")]
     public bool inCombat;
-    public event System.Action<Ability> OnAttackAnimationRequested;
+
+    /// <summary>Raised at the start of every auto-attack swing.</summary>
+    public event Action<Health> OnSwing;
+
     private PlayerTargeting targeting;
     private PlayerStats stats;
     private float nextSwingTime;
@@ -107,8 +112,11 @@ public class PlayerCombat : MonoBehaviour
     {
         nextSwingTime = Time.time + attackSpeed;
 
-        float damage = baseDamage * Random.Range(1f - damageVariance, 1f + damageVariance);
-        bool crit = Random.value < critChance;
+        // Tell the animation system a swing is happening.
+        OnSwing?.Invoke(target);
+
+        float damage = baseDamage * UnityEngine.Random.Range(1f - damageVariance, 1f + damageVariance);
+        bool crit = UnityEngine.Random.value < critChance;
         if (crit) damage *= critMultiplier;
 
         target.TakeDamage(damage, gameObject, crit);

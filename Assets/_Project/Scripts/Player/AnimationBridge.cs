@@ -1,7 +1,7 @@
 using UnityEngine;
 
 /// <summary>
-/// Converts gameplay movement and ability events into Animator parameters.
+/// Converts gameplay movement, combat and ability events into Animator parameters.
 /// Turns the visual model toward the direction of travel and plays a single
 /// forward or backward clip instead of strafe and diagonal clips.
 /// Filters grounded flicker so ramps and small steps don't trigger falling.
@@ -24,11 +24,19 @@ public class AnimationBridge : MonoBehaviour
     public string jumpTrigger = "Jump";
     public string dieTrigger = "Die";
 
-    [Header("Ability Triggers")]
+    [Header("Combat Parameters")]
+    [Tooltip("Trigger. Fired on every auto-attack swing.")]
     public string autoAttackTrigger = "AutoAttack";
+    [Tooltip("Trigger. Instant melee abilities.")]
     public string meleeStrikeTrigger = "MeleeStrike";
+    [Tooltip("Trigger. Start of a cast-time ability.")]
     public string spellCastTrigger = "SpellCast";
-    public string healTrigger = "Heal";
+    [Tooltip("Bool. True while a cast is in progress.")]
+    public string isCastingParameter = "IsCasting";
+    [Tooltip("Trigger. A cast completed and should be thrown.")]
+    public string castReleaseTrigger = "CastRelease";
+    [Tooltip("Trigger. Instant spells.")]
+    public string spellInstantTrigger = "SpellInstant";
 
     [Header("Movement")]
     public float speedMultiplier = 1f;
@@ -39,12 +47,10 @@ public class AnimationBridge : MonoBehaviour
     public float jumpAirborneGrace = 0.15f;
 
     [Header("Falling")]
-    [Tooltip("Seconds off the ground before the Animator treats it as a fall. " +
-             "Hides one-frame grounded flicker on ramps.")]
+    [Tooltip("Seconds off the ground before the Animator treats it as a fall.")]
     public float fallGraceTime = 0.15f;
 
-    [Tooltip("If ground is within this distance below the feet, still count as grounded. " +
-             "Covers walking down ramps and stepping off small ledges.")]
+    [Tooltip("If ground is within this distance below the feet, still count as grounded.")]
     public float groundProbeDistance = 0.4f;
 
     [Tooltip("Layers the ground probe can hit. Set to Environment.")]
@@ -66,6 +72,7 @@ public class AnimationBridge : MonoBehaviour
     private PlayerAbilities abilities;
     private PlayerStats stats;
     private PlayerMovement movement;
+    private PlayerCombat combat;
     private CharacterController controller;
 
     private Quaternion visualBaseRotation = Quaternion.identity;
@@ -76,6 +83,7 @@ public class AnimationBridge : MonoBehaviour
         abilities = GetComponent<PlayerAbilities>();
         stats = GetComponent<PlayerStats>();
         movement = GetComponent<PlayerMovement>();
+        combat = GetComponent<PlayerCombat>();
         controller = GetComponent<CharacterController>();
 
         if (visualRoot != null)
@@ -86,9 +94,12 @@ public class AnimationBridge : MonoBehaviour
     {
         if (abilities != null)
         {
-            abilities.OnActionStateChanged += HandleActionStateChanged;
             abilities.OnCastStarted += HandleCastStarted;
+            abilities.OnCastCompleted += HandleCastCompleted;
         }
+
+        if (combat != null)
+            combat.OnSwing += HandleSwing;
 
         if (stats != null)
             stats.OnDeath += HandleDeath;
@@ -98,9 +109,12 @@ public class AnimationBridge : MonoBehaviour
     {
         if (abilities != null)
         {
-            abilities.OnActionStateChanged -= HandleActionStateChanged;
             abilities.OnCastStarted -= HandleCastStarted;
+            abilities.OnCastCompleted -= HandleCastCompleted;
         }
+
+        if (combat != null)
+            combat.OnSwing -= HandleSwing;
 
         if (stats != null)
             stats.OnDeath -= HandleDeath;
@@ -113,6 +127,10 @@ public class AnimationBridge : MonoBehaviour
             return;
 
         UpdateMovementParameters();
+
+        // Holds the casting pose. Going false (cancel or completion) lowers the hands,
+        // unless CastRelease fired first and the throw plays instead.
+        SetBoolIfPresent(isCastingParameter, abilities != null && abilities.IsCasting);
     }
 
     private void UpdateMovementParameters()
@@ -159,10 +177,6 @@ public class AnimationBridge : MonoBehaviour
         SetFloatIfPresent(moveXParameter, animInput.x * speed);
         SetFloatIfPresent(moveYParameter, animInput.y * speed);
 
-        // Grounded as the Animator sees it:
-        // - Always airborne right after a jump, so takeoff is never skipped.
-        // - Otherwise grounded if the controller says so, if we left the ground
-        //   only a moment ago, or if ground is just below our feet.
         bool justJumped = Time.time - movement.LastJumpTime < jumpAirborneGrace;
         bool recentlyGrounded = Time.time - movement.LastTimeGrounded < fallGraceTime;
 
@@ -178,7 +192,6 @@ public class AnimationBridge : MonoBehaviour
         if (controller == null)
             return false;
 
-        // Bottom of the capsule in world space, nudged up so the ray starts inside it.
         Vector3 centre = transform.TransformPoint(controller.center);
         Vector3 feet = centre - Vector3.up * (controller.height * 0.5f);
         Vector3 origin = feet + Vector3.up * 0.1f;
@@ -205,21 +218,25 @@ public class AnimationBridge : MonoBehaviour
             visualBaseRotation * Quaternion.Euler(0f, currentFacingAngle, 0f);
     }
 
-    private void HandleActionStateChanged(PlayerActionState previous, PlayerActionState next)
-    {
-        if (animator == null)
-            return;
+    // ---- Combat and ability events ----
 
-        if (next == PlayerActionState.Casting && abilities.CastingAbility != null)
-            PlayAbilityAnimation(abilities.CastingAbility);
+    private void HandleSwing(Health target)
+    {
+        TriggerIfPresent(autoAttackTrigger);
     }
 
     private void HandleCastStarted(Ability ability, float duration)
     {
-        if (animator == null || ability == null)
-            return;
+        // Every cast-time ability raises the hands and holds.
+        TriggerIfPresent(spellCastTrigger);
+    }
 
-        PlayAbilityAnimation(ability);
+    private void HandleCastCompleted(Ability ability)
+    {
+        // Offensive spells throw on completion. Heals just lower the hands,
+        // which happens automatically when IsCasting goes false.
+        if (ability != null && ability.animationType == AbilityAnimation.SpellCast)
+            TriggerIfPresent(castReleaseTrigger);
     }
 
     private void HandleDeath()
@@ -232,34 +249,31 @@ public class AnimationBridge : MonoBehaviour
         TriggerIfPresent(jumpTrigger);
     }
 
+    /// <summary>Called by PlayerAbilities for instant abilities only.</summary>
     public void NotifyAbility(Ability ability)
     {
         if (ability == null)
             return;
 
-        PlayAbilityAnimation(ability);
-    }
-
-    private void PlayAbilityAnimation(Ability ability)
-    {
         string trigger = string.IsNullOrWhiteSpace(ability.animatorTrigger)
-            ? GetTriggerFor(ability)
+            ? GetInstantTriggerFor(ability)
             : ability.animatorTrigger;
 
         TriggerIfPresent(trigger);
     }
 
-    private string GetTriggerFor(Ability ability)
+    private string GetInstantTriggerFor(Ability ability)
     {
         switch (ability.animationType)
         {
-            case AbilityAnimation.AutoAttack:  return autoAttackTrigger;
             case AbilityAnimation.MeleeStrike: return meleeStrikeTrigger;
-            case AbilityAnimation.SpellCast:   return spellCastTrigger;
-            case AbilityAnimation.Heal:        return healTrigger;
-            default:                           return "";
+            case AbilityAnimation.SpellCast:   return spellInstantTrigger;
+            case AbilityAnimation.Heal:        return spellInstantTrigger;
+            default:                           return "";   // AutoAttack animates per swing instead
         }
     }
+
+    // ---- Animator helpers ----
 
     private void TriggerIfPresent(string parameterName)
     {
