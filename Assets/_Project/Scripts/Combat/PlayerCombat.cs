@@ -2,8 +2,10 @@ using System;
 using UnityEngine;
 
 /// <summary>
-/// Auto-attack swing loop. Engaged and disengaged by AutoAttackAbility or by
-/// right-clicking an enemy. Raises OnSwing each swing for animation.
+/// Auto-attack swing loop. Engaged and disengaged by AutoAttackAbility,
+/// right-clicking an enemy, or abilities that start auto attack.
+/// The swing timer is never reset by toggling, so spamming the toggle
+/// can't produce extra swings. Raises OnSwing each swing for animation.
 /// Attach to the Player.
 /// </summary>
 [RequireComponent(typeof(PlayerTargeting))]
@@ -29,6 +31,9 @@ public class PlayerCombat : MonoBehaviour
 
     private PlayerTargeting targeting;
     private PlayerStats stats;
+
+    // Time the next swing is allowed. Only Swing() pushes this forward,
+    // so turning auto attack off and on never grants a free swing.
     private float nextSwingTime;
 
     void Awake()
@@ -79,22 +84,25 @@ public class PlayerCombat : MonoBehaviour
             return;
         }
 
+        // Swing timer is deliberately left alone.
         inCombat = !inCombat;
-        if (inCombat) nextSwingTime = Time.time;
     }
 
-    /// <summary>Called by right-click. Engages, never disengages.</summary>
+    /// <summary>
+    /// Called by right-click and by abilities like Strike. Engages, never disengages.
+    /// </summary>
     public void EngageAutoAttack()
     {
         if (targeting.CurrentTarget == null) return;
         if (stats != null && stats.IsDead) return;
 
-        if (!inCombat)
-        {
-            inCombat = true;
-            nextSwingTime = Time.time;
-        }
+        // Swing timer is deliberately left alone. If it's already ready,
+        // the first swing happens on the next Update.
+        inCombat = true;
     }
+
+    /// <summary>Seconds until the next swing is allowed. 0 = ready.</summary>
+    public float SwingTimeRemaining => Mathf.Max(0f, nextSwingTime - Time.time);
 
     private bool InRange(Health target)
     {

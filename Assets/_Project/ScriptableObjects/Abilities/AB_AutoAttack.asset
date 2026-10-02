@@ -16,7 +16,7 @@ MonoBehaviour:
   description: Toggle melee swings against your target.
   icon: {fileID: 0}
   iconTint: {r: 0.72, g: 0.7, b: 0.66, a: 1}
-  animationType: 1
+  animationType: 0
   animatorTrigger: 
   powerCost: 0
   cooldown: 0

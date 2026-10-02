@@ -10548,7 +10548,7 @@ MonoBehaviour:
   critChance: 0.1
   critMultiplier: 2
   attackSpeed: 1.8
-  attackRange: 2.5
+  attackRange: 3
   facingTolerance: 90
   inCombat: 0
 --- !u!114 &1943445336
@@ -10604,7 +10604,9 @@ MonoBehaviour:
   autoAttackTrigger: AutoAttack
   meleeStrikeTrigger: MeleeStrike
   spellCastTrigger: SpellCast
-  healTrigger: Heal
+  isCastingParameter: IsCasting
+  castReleaseTrigger: CastRelease
+  spellInstantTrigger: SpellInstant
   speedMultiplier: 1
   jumpAirborneGrace: 0.15
   fallGraceTime: 0.15

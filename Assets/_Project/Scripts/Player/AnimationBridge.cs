@@ -5,7 +5,7 @@ using UnityEngine;
 /// Turns the visual model toward the direction of travel and plays a single
 /// forward or backward clip instead of strafe and diagonal clips.
 /// Filters grounded flicker so ramps and small steps don't trigger falling.
-/// Attach to the Player root.
+/// Holds a combat stance while fighting. Attach to the Player root.
 /// </summary>
 [RequireComponent(typeof(PlayerAbilities))]
 [RequireComponent(typeof(PlayerStats))]
@@ -37,6 +37,12 @@ public class AnimationBridge : MonoBehaviour
     public string castReleaseTrigger = "CastRelease";
     [Tooltip("Trigger. Instant spells.")]
     public string spellInstantTrigger = "SpellInstant";
+
+    [Header("Combat Stance")]
+    [Tooltip("Bool. True while fighting, plus a short linger afterwards.")]
+    public string inCombatParameter = "InCombat";
+    [Tooltip("Seconds the stance is held after combat stops.")]
+    public float combatStanceLinger = 3f;
 
     [Header("Movement")]
     public float speedMultiplier = 1f;
@@ -77,6 +83,7 @@ public class AnimationBridge : MonoBehaviour
 
     private Quaternion visualBaseRotation = Quaternion.identity;
     private float currentFacingAngle;
+    private float lastCombatTime = -99f;
 
     void Awake()
     {
@@ -128,9 +135,25 @@ public class AnimationBridge : MonoBehaviour
 
         UpdateMovementParameters();
 
+        bool casting = abilities != null && abilities.IsCasting;
+
         // Holds the casting pose. Going false (cancel or completion) lowers the hands,
         // unless CastRelease fired first and the throw plays instead.
-        SetBoolIfPresent(isCastingParameter, abilities != null && abilities.IsCasting);
+        SetBoolIfPresent(isCastingParameter, casting);
+
+        UpdateCombatStance(casting);
+    }
+
+    private void UpdateCombatStance(bool casting)
+    {
+        bool dead = stats != null && stats.IsDead;
+        bool fighting = !dead && ((combat != null && combat.inCombat) || casting);
+
+        if (fighting)
+            lastCombatTime = Time.time;
+
+        bool inStance = !dead && Time.time - lastCombatTime < combatStanceLinger;
+        SetBoolIfPresent(inCombatParameter, inStance);
     }
 
     private void UpdateMovementParameters()
@@ -254,6 +277,9 @@ public class AnimationBridge : MonoBehaviour
     {
         if (ability == null)
             return;
+
+        // Using any ability counts as fighting for the stance.
+        lastCombatTime = Time.time;
 
         string trigger = string.IsNullOrWhiteSpace(ability.animatorTrigger)
             ? GetInstantTriggerFor(ability)

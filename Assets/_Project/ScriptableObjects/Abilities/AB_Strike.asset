@@ -31,3 +31,4 @@ MonoBehaviour:
   variance: 0.12
   critChance: 0.1
   critMultiplier: 2
+  startsAutoAttack: 1
