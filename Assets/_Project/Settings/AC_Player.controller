@@ -411,7 +411,7 @@ AnimatorState:
   m_MirrorParameterActive: 0
   m_CycleOffsetParameterActive: 0
   m_TimeParameterActive: 0
-  m_Motion: {fileID: -7227379054090928255, guid: 8a71463e4cc738c45a762723d2d835c6, type: 3}
+  m_Motion: {fileID: 1240307640841230614, guid: 63a0f0c20fc5e2f4da6cb23913eaf8c9, type: 3}
   m_Tag: 
   m_SpeedParameter: 
   m_MirrorParameter: 
@@ -656,6 +656,36 @@ AnimatorController:
     m_BlendingMode: 0
     m_SyncedLayerIndex: -1
     m_DefaultWeight: 1
+    m_IKPass: 0
+    m_SyncedLayerAffectsTiming: 0
+    m_Controller: {fileID: 9100000}
+  - serializedVersion: 5
+    m_Name: FullBodyCast
+    m_StateMachine: {fileID: 6011438442041721822}
+    m_Mask: {fileID: 0}
+    m_Motions:
+    - serializedVersion: 2
+      m_State: {fileID: 4184161676608815810}
+      m_Motion: {fileID: -8470534580657764881, guid: 63a0f0c20fc5e2f4da6cb23913eaf8c9, type: 3}
+    - serializedVersion: 2
+      m_State: {fileID: 5212442501408147170}
+      m_Motion: {fileID: 5229065764069156558, guid: 63a0f0c20fc5e2f4da6cb23913eaf8c9, type: 3}
+    - serializedVersion: 2
+      m_State: {fileID: -155853483306807647}
+      m_Motion: {fileID: -5056766308259016464, guid: 63a0f0c20fc5e2f4da6cb23913eaf8c9, type: 3}
+    - serializedVersion: 2
+      m_State: {fileID: 6648912905865427548}
+      m_Motion: {fileID: -807595962510549096, guid: 63a0f0c20fc5e2f4da6cb23913eaf8c9, type: 3}
+    - serializedVersion: 2
+      m_State: {fileID: 170682337256685210}
+      m_Motion: {fileID: -5611425167571521022, guid: 63a0f0c20fc5e2f4da6cb23913eaf8c9, type: 3}
+    - serializedVersion: 2
+      m_State: {fileID: 4991338998191114471}
+      m_Motion: {fileID: -3181270547444112533, guid: 63a0f0c20fc5e2f4da6cb23913eaf8c9, type: 3}
+    m_Behaviours: []
+    m_BlendingMode: 0
+    m_SyncedLayerIndex: 1
+    m_DefaultWeight: 0
     m_IKPass: 0
     m_SyncedLayerAffectsTiming: 0
     m_Controller: {fileID: 9100000}
@@ -1162,6 +1192,25 @@ AnimatorState:
   m_MirrorParameter: 
   m_CycleOffsetParameter: 
   m_TimeParameter: 
+--- !u!1107 &6011438442041721822
+AnimatorStateMachine:
+  serializedVersion: 7
+  m_ObjectHideFlags: 1
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_Name: FullBodyCast
+  m_ChildStates: []
+  m_ChildStateMachines: []
+  m_AnyStateTransitions: []
+  m_EntryTransitions: []
+  m_StateMachineTransitions: {}
+  m_StateMachineBehaviours: []
+  m_AnyStatePosition: {x: 50, y: 20, z: 0}
+  m_EntryPosition: {x: 50, y: 120, z: 0}
+  m_ExitPosition: {x: 800, y: 120, z: 0}
+  m_ParentStateMachinePosition: {x: 800, y: 20, z: 0}
+  m_DefaultState: {fileID: 0}
 --- !u!1102 &6648912905865427548
 AnimatorState:
   serializedVersion: 6

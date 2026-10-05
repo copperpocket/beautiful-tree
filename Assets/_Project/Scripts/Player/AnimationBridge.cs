@@ -5,7 +5,9 @@ using UnityEngine;
 /// Turns the visual model toward the direction of travel and plays a single
 /// forward or backward clip instead of strafe and diagonal clips.
 /// Filters grounded flicker so ramps and small steps don't trigger falling.
-/// Holds a combat stance while fighting. Attach to the Player root.
+/// Holds a combat stance while fighting. Plays attacks on the full body while
+/// standing still, and on the upper body only while moving.
+/// Attach to the Player root.
 /// </summary>
 [RequireComponent(typeof(PlayerAbilities))]
 [RequireComponent(typeof(PlayerStats))]
@@ -43,6 +45,12 @@ public class AnimationBridge : MonoBehaviour
     public string inCombatParameter = "InCombat";
     [Tooltip("Seconds the stance is held after combat stops.")]
     public float combatStanceLinger = 3f;
+
+    [Header("Full Body Cast")]
+    [Tooltip("Synced copy of the UpperBody layer with no mask. Faded in while standing still.")]
+    public string fullBodyLayerName = "FullBodyCast";
+    [Tooltip("How fast the full-body layer fades in and out (weight per second).")]
+    public float fullBodyBlendSpeed = 8f;
 
     [Header("Movement")]
     public float speedMultiplier = 1f;
@@ -84,6 +92,9 @@ public class AnimationBridge : MonoBehaviour
     private Quaternion visualBaseRotation = Quaternion.identity;
     private float currentFacingAngle;
     private float lastCombatTime = -99f;
+
+    private int fullBodyLayerIndex = -2;   // -2 = not looked up yet, -1 = not found
+    private bool lastGrounded = true;
 
     void Awake()
     {
@@ -142,6 +153,32 @@ public class AnimationBridge : MonoBehaviour
         SetBoolIfPresent(isCastingParameter, casting);
 
         UpdateCombatStance(casting);
+        UpdateFullBodyLayer();
+    }
+
+    /// <summary>
+    /// Fades the full-body attack layer in while standing still on the ground,
+    /// and out while moving, so the legs keep running during moving attacks.
+    /// </summary>
+    private void UpdateFullBodyLayer()
+    {
+        if (fullBodyLayerIndex == -2)
+        {
+            fullBodyLayerIndex = animator.GetLayerIndex(fullBodyLayerName);
+            if (fullBodyLayerIndex < 0)
+                Debug.LogWarning($"AnimationBridge: no Animator layer named '{fullBodyLayerName}'. " +
+                                 "Full-body casting is disabled.", this);
+        }
+
+        if (fullBodyLayerIndex < 0 || movement == null)
+            return;
+
+        bool standingStill = movement.AnimationMoveSpeed < 0.1f && lastGrounded;
+        float target = standingStill ? 1f : 0f;
+
+        float current = animator.GetLayerWeight(fullBodyLayerIndex);
+        float next = Mathf.MoveTowards(current, target, fullBodyBlendSpeed * Time.deltaTime);
+        animator.SetLayerWeight(fullBodyLayerIndex, next);
     }
 
     private void UpdateCombatStance(bool casting)
@@ -206,6 +243,7 @@ public class AnimationBridge : MonoBehaviour
         bool grounded = !justJumped &&
                         (movement.IsGrounded || recentlyGrounded || ProbeGround());
 
+        lastGrounded = grounded;
         SetBoolIfPresent(groundedParameter, grounded);
     }
 
