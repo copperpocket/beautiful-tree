@@ -23,7 +23,7 @@ public class Health : MonoBehaviour, IDamageable
     public float aimHeight = 1.0f;
 
     [Header("Death")]
-    [Tooltip("Seconds the corpse stays before the object is destroyed or disabled.")]
+    [Tooltip("Seconds the corpse stays before the object is destroyed.")]
     public float corpseDuration = 3f;
 
     [Header("Feedback")]
@@ -32,7 +32,7 @@ public class Health : MonoBehaviour, IDamageable
     public Color flashColor = Color.red;
     public float flashDuration = 0.12f;
 
-    // Existing events used by other systems.
+    // (victim, damage, source)
     public event Action<Health, float, GameObject> OnDamaged;
     public event Action<Health, GameObject> OnDied;
     public event Action<float> OnHealthPercentChanged;
@@ -43,12 +43,13 @@ public class Health : MonoBehaviour, IDamageable
     public string DisplayName => displayName;
     public int Level => level;
 
+    /// <summary>When true, all damage is ignored. Used while an enemy evades home.</summary>
+    public bool IsInvulnerable { get; set; }
+
     public Transform AimPoint => aimPoint != null ? aimPoint : transform;
 
     public Vector3 AimPosition =>
-        aimPoint != null
-            ? aimPoint.position
-            : transform.position + Vector3.up * aimHeight;
+        aimPoint != null ? aimPoint.position : transform.position + Vector3.up * aimHeight;
 
     private Material flashMaterial;
     private Color originalColor;
@@ -60,9 +61,8 @@ public class Health : MonoBehaviour, IDamageable
 
         if (flashRenderer != null)
         {
-            // Instance the material so one enemy does not flash every enemy.
+            // Instance the material so flashing one enemy doesn't flash them all.
             flashMaterial = flashRenderer.material;
-
             if (flashMaterial.HasProperty("_BaseColor"))
                 originalColor = flashMaterial.GetColor("_BaseColor");
         }
@@ -77,20 +77,16 @@ public class Health : MonoBehaviour, IDamageable
         }
     }
 
-    /// <summary>
-    /// Required by IDamageable. Normal damage is not critical.
-    /// </summary>
+    /// <summary>Required by IDamageable. Normal damage is not critical.</summary>
     public void TakeDamage(float amount, GameObject source)
     {
         TakeDamage(amount, source, false);
     }
 
-    /// <summary>
-    /// Damage entry point that can identify critical hits.
-    /// </summary>
+    /// <summary>Damage entry point that can identify critical hits.</summary>
     public void TakeDamage(float amount, GameObject source, bool critical)
     {
-        if (IsDead || amount <= 0f)
+        if (IsDead || IsInvulnerable || amount <= 0f)
             return;
 
         CurrentHealth = Mathf.Max(0f, CurrentHealth - amount);
@@ -120,44 +116,34 @@ public class Health : MonoBehaviour, IDamageable
         if (killer != null && xpReward > 0)
         {
             var stats = killer.GetComponentInParent<PlayerStats>();
-
-            if (stats != null)
-                stats.GainXP(xpReward);
+            if (stats != null) stats.GainXP(xpReward);
         }
 
         OnDied?.Invoke(this, killer);
 
-        // Temporary death feedback until animations exist.
+        // Temporary death feedback until enemies have a death animation.
         transform.Rotate(90f, 0f, 0f);
 
-        foreach (var collider in GetComponentsInChildren<Collider>())
-            collider.enabled = false;
+        foreach (var c in GetComponentsInChildren<Collider>())
+            c.enabled = false;
 
         Destroy(gameObject, corpseDuration);
     }
 
-    /// <summary>
-    /// Used by a spawner that reuses the object instead of destroying it.
-    /// </summary>
+    /// <summary>Restores full health. Used by spawners and by evading enemies.</summary>
     public void ResetHealth()
     {
         IsDead = false;
         CurrentHealth = maxHealth;
-
         OnHealthPercentChanged?.Invoke(1f);
 
-        foreach (var collider in GetComponentsInChildren<Collider>())
-            collider.enabled = true;
+        foreach (var c in GetComponentsInChildren<Collider>())
+            c.enabled = true;
     }
 
     private void SetFlash(bool on)
     {
-        if (flashMaterial == null ||
-            !flashMaterial.HasProperty("_BaseColor"))
-            return;
-
-        flashMaterial.SetColor(
-            "_BaseColor",
-            on ? flashColor : originalColor);
+        if (flashMaterial == null || !flashMaterial.HasProperty("_BaseColor")) return;
+        flashMaterial.SetColor("_BaseColor", on ? flashColor : originalColor);
     }
 }
