@@ -18,8 +18,10 @@ public class FloatingCombatText : MonoBehaviour
     public float criticalScale = 1.25f;
 
     [Header("Colours")]
-    public Color damageColor = new Color(1f, 0.9f, 0.9f);
-    public Color criticalColor = new Color(1f, 0.85f, 0.2f);
+    [Tooltip("Auto attacks.")]
+    public Color autoAttackColor = new Color(1f, 1f, 1f);
+    [Tooltip("Abilities such as Strike, Fireball and Frost Bolt.")]
+    public Color abilityColor = new Color(1f, 0.85f, 0.15f);
     public Color incomingColor = new Color(1f, 0.25f, 0.25f);
     public Color healingColor = new Color(0.35f, 1f, 0.45f);
     public Color experienceColor = new Color(0.75f, 0.5f, 1f);
@@ -48,13 +50,25 @@ public class FloatingCombatText : MonoBehaviour
         targetCamera = Camera.main;
 
         string amount = Mathf.RoundToInt(combatEvent.amount).ToString();
-        bool critical = combatEvent.type == CombatTextType.CriticalDamage;
+        bool critical = false;
 
         switch (combatEvent.type)
         {
             case CombatTextType.CriticalDamage:
                 text.text = $"<b>CRIT!</b> {amount}";
-                text.color = criticalColor;
+                text.color = autoAttackColor;
+                critical = true;
+                break;
+
+            case CombatTextType.AbilityDamage:
+                text.text = amount;
+                text.color = abilityColor;
+                break;
+
+            case CombatTextType.AbilityCritical:
+                text.text = $"<b>CRIT!</b> {amount}";
+                text.color = abilityColor;
+                critical = true;
                 break;
 
             case CombatTextType.IncomingDamage:
@@ -72,9 +86,9 @@ public class FloatingCombatText : MonoBehaviour
                 text.color = experienceColor;
                 break;
 
-            default:
+            default: // Damage (auto attack)
                 text.text = amount;
-                text.color = damageColor;
+                text.color = autoAttackColor;
                 break;
         }
 

@@ -77,14 +77,20 @@ public class Health : MonoBehaviour, IDamageable
         }
     }
 
-    /// <summary>Required by IDamageable. Normal damage is not critical.</summary>
+    /// <summary>Required by IDamageable. Normal, non-critical, non-ability damage.</summary>
     public void TakeDamage(float amount, GameObject source)
     {
-        TakeDamage(amount, source, false);
+        TakeDamage(amount, source, false, false);
     }
 
-    /// <summary>Damage entry point that can identify critical hits.</summary>
+    /// <summary>Auto-attack style damage that may be critical.</summary>
     public void TakeDamage(float amount, GameObject source, bool critical)
+    {
+        TakeDamage(amount, source, critical, false);
+    }
+
+    /// <summary>Full damage entry point. fromAbility colours the combat text yellow.</summary>
+    public void TakeDamage(float amount, GameObject source, bool critical, bool fromAbility)
     {
         if (IsDead || IsInvulnerable || amount <= 0f)
             return;
@@ -94,11 +100,11 @@ public class Health : MonoBehaviour, IDamageable
         OnHealthPercentChanged?.Invoke(CurrentHealth / maxHealth);
         OnDamaged?.Invoke(this, amount, source);
 
-        CombatTextBus.Publish(new CombatTextEvent(
-            critical ? CombatTextType.CriticalDamage : CombatTextType.Damage,
-            amount,
-            AimPosition,
-            source));
+        CombatTextType textType = fromAbility
+            ? (critical ? CombatTextType.AbilityCritical : CombatTextType.AbilityDamage)
+            : (critical ? CombatTextType.CriticalDamage : CombatTextType.Damage);
+
+        CombatTextBus.Publish(new CombatTextEvent(textType, amount, AimPosition, source));
 
         SetFlash(true);
         flashUntil = Time.time + flashDuration;

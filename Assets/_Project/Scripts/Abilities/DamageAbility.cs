@@ -28,7 +28,8 @@ public class DamageAbility : Ability
         if (critical)
             dealt *= critMultiplier;
 
-        ctx.target.TakeDamage(dealt, ctx.caster, critical);
+        // fromAbility = true, so the number shows in yellow.
+        ctx.target.TakeDamage(dealt, ctx.caster, critical, true);
 
         Debug.Log($"{displayName} hit {ctx.target.DisplayName} for " +
                   $"{dealt:F0}{(critical ? " CRIT" : "")}");
