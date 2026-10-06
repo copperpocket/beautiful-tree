@@ -51,6 +51,10 @@ public class PlayerStats : MonoBehaviour, IDamageable
     [Header("Combat Text")]
     [Tooltip("Show floating numbers when the player takes damage or heals.")]
     public bool showCombatText = true;
+    [Tooltip("Show a floating +XP number on every XP gain.")]
+    public bool showXPText = true;
+    [Tooltip("Extra height for XP text, so it doesn't overlap damage numbers.")]
+    public float xpTextHeight = 0.6f;
 
     [Header("Debug")]
     public bool godMode = false;
@@ -258,6 +262,9 @@ public class PlayerStats : MonoBehaviour, IDamageable
     [ContextMenu("Take 25 Damage")]
     private void DebugDamage() => TakeDamage(25f, null);
 
+    [ContextMenu("Gain 25 XP")]
+    private void DebugXP() => GainXP(25);
+
     // ---- XP ----
 
     public void GainXP(int amount)
@@ -266,6 +273,16 @@ public class PlayerStats : MonoBehaviour, IDamageable
 
         CurrentXP += amount;
         Debug.Log($"Gained {amount} XP. {CurrentXP}/{XPToNextLevel}");
+
+        // Purple "+25 XP" above the player, a little higher than damage numbers.
+        if (showXPText)
+        {
+            CombatTextBus.Publish(new CombatTextEvent(
+                CombatTextType.Experience,
+                amount,
+                AimPosition + Vector3.up * xpTextHeight,
+                gameObject));
+        }
 
         while (level < maxLevel && CurrentXP >= XPToNextLevel)
         {
