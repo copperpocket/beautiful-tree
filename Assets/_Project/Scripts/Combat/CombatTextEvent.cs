@@ -9,7 +9,13 @@ public enum CombatTextType
     AbilityCritical, // ability crit
     IncomingDamage,  // damage you take
     Healing,
-    Experience
+    Experience,
+    Evade,           // hit an enemy that's resetting
+    EnterCombat,
+    LeaveCombat,
+    PowerGain,       // e.g. +12 Rage
+    LowHealth,
+    LowPower
 }
 
 public readonly struct CombatTextEvent
@@ -18,17 +24,21 @@ public readonly struct CombatTextEvent
     public readonly float amount;
     public readonly Vector3 worldPosition;
     public readonly GameObject source;
+    /// <summary>Optional display text, e.g. "Rage" or "Low Mana".</summary>
+    public readonly string label;
 
     public CombatTextEvent(
         CombatTextType type,
         float amount,
         Vector3 worldPosition,
-        GameObject source = null)
+        GameObject source = null,
+        string label = null)
     {
         this.type = type;
         this.amount = amount;
         this.worldPosition = worldPosition;
         this.source = source;
+        this.label = label;
     }
 }
 

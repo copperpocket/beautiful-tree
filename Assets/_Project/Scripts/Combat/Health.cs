@@ -92,8 +92,16 @@ public class Health : MonoBehaviour, IDamageable
     /// <summary>Full damage entry point. fromAbility colours the combat text yellow.</summary>
     public void TakeDamage(float amount, GameObject source, bool critical, bool fromAbility)
     {
-        if (IsDead || IsInvulnerable || amount <= 0f)
+        if (IsDead || amount <= 0f)
             return;
+
+        // Resetting enemies ignore damage. Say so instead of showing nothing.
+        if (IsInvulnerable)
+        {
+            CombatTextBus.Publish(new CombatTextEvent(
+                CombatTextType.Evade, 0f, AimPosition, source, "Evade"));
+            return;
+        }
 
         CurrentHealth = Mathf.Max(0f, CurrentHealth - amount);
 

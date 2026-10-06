@@ -2,7 +2,7 @@ using TMPro;
 using UnityEngine;
 
 /// <summary>
-/// Moves a single combat number upward and fades it out.
+/// Moves a single combat number or message upward and fades it out.
 /// Attach to the world-space TextMeshPro prefab. Outline styling comes from
 /// the prefab's TMP Material Preset.
 /// </summary>
@@ -16,6 +16,8 @@ public class FloatingCombatText : MonoBehaviour
     [Header("Scale")]
     public float normalScale = 1f;
     public float criticalScale = 1.25f;
+    [Tooltip("Word messages such as Evade, +Combat and Low Health.")]
+    public float messageScale = 0.9f;
 
     [Header("Colours")]
     [Tooltip("Auto attacks.")]
@@ -25,6 +27,10 @@ public class FloatingCombatText : MonoBehaviour
     public Color incomingColor = new Color(1f, 0.25f, 0.25f);
     public Color healingColor = new Color(0.35f, 1f, 0.45f);
     public Color experienceColor = new Color(0.75f, 0.5f, 1f);
+    public Color evadeColor = new Color(0.8f, 0.8f, 0.8f);
+    public Color combatStateColor = new Color(1f, 0.6f, 0.2f);
+    public Color powerColor = new Color(0.4f, 0.65f, 1f);
+    public Color warningColor = new Color(1f, 0.2f, 0.2f);
 
     private TMP_Text text;
     private Camera targetCamera;
@@ -42,53 +48,71 @@ public class FloatingCombatText : MonoBehaviour
             canvasGroup = gameObject.AddComponent<CanvasGroup>();
     }
 
-    public void Initialize(CombatTextEvent combatEvent)
+    public void Initialize(CombatTextEvent e)
     {
         if (text == null)
             text = GetComponentInChildren<TMP_Text>();
 
         targetCamera = Camera.main;
 
-        string amount = Mathf.RoundToInt(combatEvent.amount).ToString();
-        bool critical = false;
+        string amount = Mathf.RoundToInt(e.amount).ToString();
+        float scale = normalScale;
 
-        switch (combatEvent.type)
+        switch (e.type)
         {
             case CombatTextType.CriticalDamage:
-                text.text = $"<b>CRIT!</b> {amount}";
-                text.color = autoAttackColor;
-                critical = true;
+                Set($"<b>CRIT!</b> {amount}", autoAttackColor);
+                scale = criticalScale;
                 break;
 
             case CombatTextType.AbilityDamage:
-                text.text = amount;
-                text.color = abilityColor;
+                Set(amount, abilityColor);
                 break;
 
             case CombatTextType.AbilityCritical:
-                text.text = $"<b>CRIT!</b> {amount}";
-                text.color = abilityColor;
-                critical = true;
+                Set($"<b>CRIT!</b> {amount}", abilityColor);
+                scale = criticalScale;
                 break;
 
             case CombatTextType.IncomingDamage:
-                text.text = $"-{amount}";
-                text.color = incomingColor;
+                Set($"-{amount}", incomingColor);
                 break;
 
             case CombatTextType.Healing:
-                text.text = $"+{amount}";
-                text.color = healingColor;
+                Set($"+{amount}", healingColor);
                 break;
 
             case CombatTextType.Experience:
-                text.text = $"+{amount} XP";
-                text.color = experienceColor;
+                Set($"+{amount} XP", experienceColor);
+                break;
+
+            case CombatTextType.Evade:
+                Set(e.label ?? "Evade", evadeColor);
+                scale = messageScale;
+                break;
+
+            case CombatTextType.EnterCombat:
+                Set(e.label ?? "+Combat", combatStateColor);
+                scale = messageScale;
+                break;
+
+            case CombatTextType.LeaveCombat:
+                Set(e.label ?? "-Combat", combatStateColor);
+                scale = messageScale;
+                break;
+
+            case CombatTextType.PowerGain:
+                Set($"+{amount} {e.label}", powerColor);
+                break;
+
+            case CombatTextType.LowHealth:
+            case CombatTextType.LowPower:
+                Set(e.label ?? "Low", warningColor);
+                scale = messageScale;
                 break;
 
             default: // Damage (auto attack)
-                text.text = amount;
-                text.color = autoAttackColor;
+                Set(amount, autoAttackColor);
                 break;
         }
 
@@ -97,15 +121,21 @@ public class FloatingCombatText : MonoBehaviour
             riseSpeed,
             0f);
 
-        transform.position = combatEvent.worldPosition +
+        transform.position = e.worldPosition +
                              new Vector3(Random.Range(-0.2f, 0.2f),
                                          Random.Range(0f, 0.25f),
                                          0f);
 
-        transform.localScale = Vector3.one * (critical ? criticalScale : normalScale);
+        transform.localScale = Vector3.one * scale;
 
         age = 0f;
         canvasGroup.alpha = 1f;
+    }
+
+    private void Set(string value, Color color)
+    {
+        text.text = value;
+        text.color = color;
     }
 
     void Update()

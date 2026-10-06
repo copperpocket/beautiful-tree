@@ -49,11 +49,11 @@ public class PlayerStats : MonoBehaviour, IDamageable
     public float aimHeight = 1f;
 
     [Header("Combat Text")]
-    [Tooltip("Show floating numbers when the player takes damage or heals.")]
+    [Tooltip("Show floating numbers when the player takes damage, heals, or gains power.")]
     public bool showCombatText = true;
     [Tooltip("Show a floating +XP number on every XP gain.")]
     public bool showXPText = true;
-    [Tooltip("Extra height for XP text, so it doesn't overlap damage numbers.")]
+    [Tooltip("Extra height for XP and power text, so it doesn't overlap damage numbers.")]
     public float xpTextHeight = 0.6f;
 
     [Header("Debug")]
@@ -164,12 +164,27 @@ public class PlayerStats : MonoBehaviour, IDamageable
         return true;
     }
 
-    /// <summary>Grant power, e.g. Rage from swinging.</summary>
+    /// <summary>Grant power from an action, e.g. Rage from swinging. Not used by regen.</summary>
     public void GainPower(float amount)
     {
         if (IsDead || amount <= 0f) return;
+
+        float before = Power;
         SetPower(Power + amount);
         lastPowerGain = Time.time;
+
+        float gained = Power - before;
+
+        // "+12 Rage" above the player. Nothing shows when already full.
+        if (showCombatText && gained >= 0.5f)
+        {
+            CombatTextBus.Publish(new CombatTextEvent(
+                CombatTextType.PowerGain,
+                gained,
+                AimPosition + Vector3.up * xpTextHeight,
+                gameObject,
+                powerType.ToString()));
+        }
     }
 
     /// <summary>Called by PlayerCombat on each auto-attack swing.</summary>
@@ -264,6 +279,9 @@ public class PlayerStats : MonoBehaviour, IDamageable
 
     [ContextMenu("Gain 25 XP")]
     private void DebugXP() => GainXP(25);
+
+    [ContextMenu("Gain 12 Power")]
+    private void DebugPower() => GainPower(12f);
 
     // ---- XP ----
 
