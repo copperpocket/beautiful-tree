@@ -17,6 +17,7 @@ GameObject:
   - component: {fileID: 3677095688363577164}
   - component: {fileID: 7633906275666219311}
   - component: {fileID: 850820951219682126}
+  - component: {fileID: 7001530534455160545}
   m_Layer: 8
   m_Name: Dummy
   m_TagString: Untagged
@@ -232,6 +233,18 @@ MonoBehaviour:
   walkSpeed: 2.5
   pauseRange: {x: 2, y: 5}
   arriveDistance: 0.5
+--- !u!114 &7001530534455160545
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 3104802445932641131}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: be03fc5681a096542b6d97879cf0c30c, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::KillReporter
 --- !u!1001 &2733594058391139024
 PrefabInstance:
   m_ObjectHideFlags: 0
