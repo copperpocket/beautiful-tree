@@ -498,7 +498,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: -8679921383154817045, guid: 3b50a0d3258a3f542b0989881971b34d, type: 3}
       propertyPath: m_LocalPosition.y
-      value: 0
+      value: -0.1
       objectReference: {fileID: 0}
     - target: {fileID: -8679921383154817045, guid: 3b50a0d3258a3f542b0989881971b34d, type: 3}
       propertyPath: m_LocalPosition.z
@@ -10405,6 +10405,14 @@ MonoBehaviour:
   floatingTextPrefab: {fileID: 5572730551661572549, guid: efa2d30c0f31fbe4097b61cf64f50a88, type: 3}
   worldOffset: {x: 0, y: 0.35, z: 0}
   maxActiveText: 30
+  showDamageDealt: 1
+  showEvade: 1
+  showDamageTaken: 1
+  showHealingReceived: 1
+  showExperience: 1
+  showCombatState: 1
+  showPowerGains: 1
+  showLowWarnings: 1
 --- !u!114 &1824136305
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -11086,6 +11094,7 @@ GameObject:
   - component: {fileID: 1943445335}
   - component: {fileID: 1943445336}
   - component: {fileID: 1943445337}
+  - component: {fileID: 1943445338}
   m_Layer: 0
   m_Name: Player
   m_TagString: Untagged
@@ -11286,6 +11295,8 @@ MonoBehaviour:
   aimPoint: {fileID: 0}
   aimHeight: 1
   showCombatText: 1
+  showXPText: 1
+  xpTextHeight: 0.6
   godMode: 0
   logDamage: 1
 --- !u!114 &1943445334
@@ -11404,6 +11415,23 @@ MonoBehaviour:
   facingTurnSpeed: 540
   maxFacingAngle: 90
   maxBackwardAngle: 45
+--- !u!114 &1943445338
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1943445326}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 80b1036d5055d4a41945751df8323889, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::PlayerCombatTracker
+  checkInterval: 0.25
+  lowHealthThreshold: 0.35
+  lowPowerThreshold: 0.2
+  rearmMargin: 0.05
+  textHeight: 0.9
 --- !u!1 &1966015654
 GameObject:
   m_ObjectHideFlags: 0
