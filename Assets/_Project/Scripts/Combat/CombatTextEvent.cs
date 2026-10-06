@@ -3,8 +3,9 @@ using UnityEngine;
 
 public enum CombatTextType
 {
-    Damage,
-    CriticalDamage,
+    Damage,          // damage you deal
+    CriticalDamage,  // your critical hits
+    IncomingDamage,  // damage you take
     Healing,
     Experience
 }

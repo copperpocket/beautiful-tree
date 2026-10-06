@@ -48,6 +48,10 @@ public class PlayerStats : MonoBehaviour, IDamageable
     public Transform aimPoint;
     public float aimHeight = 1f;
 
+    [Header("Combat Text")]
+    [Tooltip("Show floating numbers when the player takes damage or heals.")]
+    public bool showCombatText = true;
+
     [Header("Debug")]
     public bool godMode = false;
     public bool logDamage = true;
@@ -197,6 +201,16 @@ public class PlayerStats : MonoBehaviour, IDamageable
 
         SetHealth(Health - amount);
 
+        // Red floating number above the player.
+        if (showCombatText)
+        {
+            CombatTextBus.Publish(new CombatTextEvent(
+                CombatTextType.IncomingDamage,
+                amount,
+                AimPosition,
+                source));
+        }
+
         if (logDamage)
         {
             string from = source != null ? source.name : "unknown";
@@ -213,20 +227,18 @@ public class PlayerStats : MonoBehaviour, IDamageable
 
     public void Heal(float amount)
     {
-        if (IsDead || amount <= 0f)
-            return;
+        if (IsDead || amount <= 0f) return;
 
-        float oldHealth = Health;
-
+        float before = Health;
         SetHealth(Health + amount);
+        float healed = Health - before;
 
-        float actualHealing = Health - oldHealth;
-
-        if (actualHealing > 0f)
+        // Only show what was actually restored, so no "+35" at full health.
+        if (showCombatText && healed > 0f)
         {
             CombatTextBus.Publish(new CombatTextEvent(
                 CombatTextType.Healing,
-                actualHealing,
+                healed,
                 AimPosition,
                 gameObject));
         }
