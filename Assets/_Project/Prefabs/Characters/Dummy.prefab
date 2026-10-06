@@ -16,6 +16,7 @@ GameObject:
   - component: {fileID: 1039163979145836176}
   - component: {fileID: 3677095688363577164}
   - component: {fileID: 7633906275666219311}
+  - component: {fileID: 5914175444847640789}
   m_Layer: 8
   m_Name: Dummy
   m_TagString: Untagged
@@ -190,6 +191,8 @@ MonoBehaviour:
   attackDamage: 6
   damageVariance: 0.15
   facingTolerance: 60
+  impactFallback: 0.35
+  impactRangeTolerance: 1.5
   logStateChanges: 1
 --- !u!114 &7633906275666219311
 MonoBehaviour:
@@ -213,6 +216,18 @@ MonoBehaviour:
   dieTrigger: Die
   fullBodyLayerName: FullBodyCast
   fullBodyBlendSpeed: 8
+--- !u!114 &5914175444847640789
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 3104802445932641131}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 1a8a6a9cbfa1c4e42b28e68a0dd78c98, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::AnimationImpactRelay
 --- !u!1001 &2733594058391139024
 PrefabInstance:
   m_ObjectHideFlags: 0

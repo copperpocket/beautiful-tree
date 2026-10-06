@@ -4,9 +4,8 @@ using UnityEngine;
 /// <summary>
 /// Auto-attack swing loop. Engaged and disengaged by AutoAttackAbility,
 /// right-clicking an enemy, or abilities that start auto attack.
-/// The swing timer is never reset by toggling, so spamming the toggle
-/// can't produce extra swings. Raises OnSwing each swing for animation.
-/// Attach to the Player.
+/// Damage is queued at the swing and lands on the animation's Impact event,
+/// or after a fallback delay. Also queues ability hits. Attach to the Player.
 /// </summary>
 [RequireComponent(typeof(PlayerTargeting))]
 public class PlayerCombat : MonoBehaviour
@@ -19,8 +18,12 @@ public class PlayerCombat : MonoBehaviour
 
     [Header("Swing")]
     public float attackSpeed = 1.8f;
-    public float attackRange = 2.5f;
+    public float attackRange = 3f;
     public float facingTolerance = 90f;
+
+    [Header("Impact Timing")]
+    [Tooltip("Seconds after the swing before damage lands if no Impact event arrives.")]
+    public float impactFallback = 0.35f;
 
     [Header("State")]
     [Tooltip("Read-only. True while auto-attacking.")]
@@ -29,27 +32,38 @@ public class PlayerCombat : MonoBehaviour
     /// <summary>Raised at the start of every auto-attack swing.</summary>
     public event Action<Health> OnSwing;
 
+    public float SwingTimeRemaining => Mathf.Max(0f, nextSwingTime - Time.time);
+
     private PlayerTargeting targeting;
     private PlayerStats stats;
+    private AnimationImpactRelay impactRelay;
+    private readonly DeferredHitQueue pendingHits = new();
 
-    // Time the next swing is allowed. Only Swing() pushes this forward,
-    // so turning auto attack off and on never grants a free swing.
+    // Only Swing() pushes this forward, so toggling never grants a free swing.
     private float nextSwingTime;
 
     void Awake()
     {
         targeting = GetComponent<PlayerTargeting>();
         stats = GetComponent<PlayerStats>();
+
+        // The active model under Visual. Inactive models (old Quaternius) are skipped.
+        impactRelay = GetComponentInChildren<AnimationImpactRelay>();
+        if (impactRelay == null)
+            Debug.LogWarning("PlayerCombat: no AnimationImpactRelay on the player model. " +
+                             "Hits will land on the fallback timer.", this);
     }
 
     void OnEnable()
     {
         targeting.OnTargetChanged += HandleTargetChanged;
+        if (impactRelay != null) impactRelay.OnImpact += HandleImpact;
     }
 
     void OnDisable()
     {
         targeting.OnTargetChanged -= HandleTargetChanged;
+        if (impactRelay != null) impactRelay.OnImpact -= HandleImpact;
     }
 
     void Update()
@@ -57,8 +71,11 @@ public class PlayerCombat : MonoBehaviour
         if (stats != null && stats.IsDead)
         {
             inCombat = false;
+            pendingHits.Clear();
             return;
         }
+
+        pendingHits.Tick();
 
         if (!inCombat) return;
 
@@ -84,25 +101,23 @@ public class PlayerCombat : MonoBehaviour
             return;
         }
 
-        // Swing timer is deliberately left alone.
         inCombat = !inCombat;
     }
 
-    /// <summary>
-    /// Called by right-click and by abilities like Strike. Engages, never disengages.
-    /// </summary>
+    /// <summary>Called by right-click and by abilities like Strike. Engages, never disengages.</summary>
     public void EngageAutoAttack()
     {
         if (targeting.CurrentTarget == null) return;
         if (stats != null && stats.IsDead) return;
 
-        // Swing timer is deliberately left alone. If it's already ready,
-        // the first swing happens on the next Update.
         inCombat = true;
     }
 
-    /// <summary>Seconds until the next swing is allowed. 0 = ready.</summary>
-    public float SwingTimeRemaining => Mathf.Max(0f, nextSwingTime - Time.time);
+    /// <summary>Queue a hit to land on the next Impact event, or after fallbackDelay.</summary>
+    public void QueueHit(Action apply, float fallbackDelay)
+    {
+        pendingHits.Add(apply, fallbackDelay);
+    }
 
     private bool InRange(Health target)
     {
@@ -120,20 +135,28 @@ public class PlayerCombat : MonoBehaviour
     {
         nextSwingTime = Time.time + attackSpeed;
 
-        // Tell the animation system a swing is happening.
+        // Animation starts now. Damage waits for the impact frame.
         OnSwing?.Invoke(target);
 
         float damage = baseDamage * UnityEngine.Random.Range(1f - damageVariance, 1f + damageVariance);
         bool crit = UnityEngine.Random.value < critChance;
         if (crit) damage *= critMultiplier;
 
-        target.TakeDamage(damage, gameObject, crit);
-
         // Rage classes build power by swinging.
         if (stats != null) stats.OnAutoAttackSwing();
 
-        Debug.Log($"Swing hit {target.DisplayName} for {damage:F0}{(crit ? " CRIT" : "")}. " +
-                  $"{target.CurrentHealth:F0}/{target.MaxHealth:F0} left");
+        QueueHit(() =>
+        {
+            if (target == null || target.IsDead) return;
+            if (stats != null && stats.IsDead) return;
+
+            target.TakeDamage(damage, gameObject, crit);
+        }, impactFallback);
+    }
+
+    private void HandleImpact()
+    {
+        pendingHits.ResolveNext();
     }
 
     private void HandleTargetChanged(Health newTarget)

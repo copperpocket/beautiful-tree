@@ -17,6 +17,10 @@ public class DamageAbility : Ability
              "Leave off for spells.")]
     public bool startsAutoAttack = false;
 
+    [Header("Impact Timing")]
+    [Tooltip("Seconds before damage lands if no Impact event arrives.")]
+    public float impactFallback = 0.35f;
+
     public override void Execute(AbilityContext ctx)
     {
         if (ctx.target == null || ctx.target.IsDead)
@@ -24,18 +28,28 @@ public class DamageAbility : Ability
 
         float dealt = damage * Random.Range(1f - variance, 1f + variance);
         bool critical = Random.value < critChance;
+        if (critical) dealt *= critMultiplier;
 
-        if (critical)
-            dealt *= critMultiplier;
+        Health target = ctx.target;
+        GameObject caster = ctx.caster;
 
-        // fromAbility = true, so the number shows in yellow.
-        ctx.target.TakeDamage(dealt, ctx.caster, critical, true);
+        void Apply()
+        {
+            if (target == null || target.IsDead) return;
 
-        Debug.Log($"{displayName} hit {ctx.target.DisplayName} for " +
-                  $"{dealt:F0}{(critical ? " CRIT" : "")}");
+            // fromAbility = true, so the number shows in yellow.
+            target.TakeDamage(dealt, caster, critical, true);
+            Debug.Log($"{displayName} hit {target.DisplayName} for " +
+                      $"{dealt:F0}{(critical ? " CRIT" : "")}");
+        }
 
-        // Start swinging, unless the target died from this hit.
-        if (startsAutoAttack && ctx.combat != null && !ctx.target.IsDead)
+        // Swinging starts now, like WoW. The damage waits for the impact frame.
+        if (startsAutoAttack && ctx.combat != null)
             ctx.combat.EngageAutoAttack();
+
+        if (ctx.combat != null)
+            ctx.combat.QueueHit(Apply, impactFallback);
+        else
+            Apply();
     }
 }

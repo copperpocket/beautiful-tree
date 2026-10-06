@@ -547,7 +547,10 @@ PrefabInstance:
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
-    m_AddedComponents: []
+    m_AddedComponents:
+    - targetCorrespondingSourceObject: {fileID: 919132149155446097, guid: 3b50a0d3258a3f542b0989881971b34d, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 1908216383}
   m_SourcePrefab: {fileID: 100100000, guid: 3b50a0d3258a3f542b0989881971b34d, type: 3}
 --- !u!4 &238666919 stripped
 Transform:
@@ -10002,6 +10005,23 @@ RectTransform:
   m_AnchoredPosition: {x: 200, y: 0}
   m_SizeDelta: {x: 46, y: 46}
   m_Pivot: {x: 0, y: 0}
+--- !u!1 &1908216382 stripped
+GameObject:
+  m_CorrespondingSourceObject: {fileID: 919132149155446097, guid: 3b50a0d3258a3f542b0989881971b34d, type: 3}
+  m_PrefabInstance: {fileID: 238666918}
+  m_PrefabAsset: {fileID: 0}
+--- !u!114 &1908216383
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1908216382}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 1a8a6a9cbfa1c4e42b28e68a0dd78c98, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::AnimationImpactRelay
 --- !u!1 &1917319688
 GameObject:
   m_ObjectHideFlags: 0
@@ -10651,6 +10671,7 @@ MonoBehaviour:
   powerPerLevel: 5
   aimPoint: {fileID: 0}
   aimHeight: 1
+  showCombatText: 1
   godMode: 0
   logDamage: 1
 --- !u!114 &1943445334
@@ -10693,6 +10714,7 @@ MonoBehaviour:
   attackSpeed: 1.8
   attackRange: 3
   facingTolerance: 90
+  impactFallback: 0.35
   inCombat: 0
 --- !u!114 &1943445336
 MonoBehaviour:

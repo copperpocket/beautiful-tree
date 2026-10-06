@@ -14,7 +14,8 @@ public enum EnemyState
 /// <summary>
 /// Basic melee enemy: idles at home, aggroes on proximity or damage, chases,
 /// attacks on a swing timer, and evades home (full heal, immune) if pulled
-/// too far. Attach to the enemy root alongside Health.
+/// too far. Damage lands on the attack animation's Impact event.
+/// Attach to the enemy root alongside Health.
 /// </summary>
 [RequireComponent(typeof(Health))]
 [RequireComponent(typeof(NavMeshAgent))]
@@ -55,6 +56,12 @@ public class EnemyAI : MonoBehaviour
     [Tooltip("Degrees off-centre the player can be and still be hit.")]
     public float facingTolerance = 60f;
 
+    [Header("Impact Timing")]
+    [Tooltip("Seconds after the swing before damage lands if no Impact event arrives.")]
+    public float impactFallback = 0.35f;
+    [Tooltip("The hit misses if the player is farther than attackRange times this at impact.")]
+    public float impactRangeTolerance = 1.5f;
+
     [Header("Debug")]
     public bool logStateChanges = false;
 
@@ -76,6 +83,9 @@ public class EnemyAI : MonoBehaviour
 
     private Health health;
     private NavMeshAgent agent;
+    private AnimationImpactRelay impactRelay;
+    private readonly DeferredHitQueue pendingHits = new();
+
     private PlayerStats player;
     private PlayerStats target;
 
@@ -90,18 +100,21 @@ public class EnemyAI : MonoBehaviour
     {
         health = GetComponent<Health>();
         agent = GetComponent<NavMeshAgent>();
+        impactRelay = GetComponentInChildren<AnimationImpactRelay>();
     }
 
     void OnEnable()
     {
         health.OnDamaged += HandleDamaged;
         health.OnDied += HandleDied;
+        if (impactRelay != null) impactRelay.OnImpact += HandleImpact;
     }
 
     void OnDisable()
     {
         health.OnDamaged -= HandleDamaged;
         health.OnDied -= HandleDied;
+        if (impactRelay != null) impactRelay.OnImpact -= HandleImpact;
     }
 
     void Start()
@@ -123,6 +136,8 @@ public class EnemyAI : MonoBehaviour
     {
         if (State == EnemyState.Dead)
             return;
+
+        pendingHits.Tick();
 
         // Never touch the agent while it's off the NavMesh. Keep retrying instead.
         if (!AgentReady)
@@ -262,6 +277,7 @@ public class EnemyAI : MonoBehaviour
     private void StartReturn()
     {
         // WoW-style evade: heal fully and ignore damage until home.
+        pendingHits.Clear();
         health.ResetHealth();
         health.IsInvulnerable = true;
 
@@ -288,16 +304,33 @@ public class EnemyAI : MonoBehaviour
     {
         nextAttackTime = Time.time + attackSpeed;
 
+        // Animation starts now. Damage waits for the impact frame.
         OnAttack?.Invoke(target);
 
+        PlayerStats victim = target;
         float damage = attackDamage *
                        UnityEngine.Random.Range(1f - damageVariance, 1f + damageVariance);
 
-        // Damage lands immediately for now. Animation-timed damage comes next.
-        target.TakeDamage(damage, gameObject);
+        pendingHits.Add(() =>
+        {
+            if (State == EnemyState.Dead || victim == null || victim.IsDead)
+                return;
+
+            // Stepping away before the impact dodges the hit.
+            if (FlatDistance(transform.position, victim.transform.position) >
+                attackRange * impactRangeTolerance)
+                return;
+
+            victim.TakeDamage(damage, gameObject);
+        }, impactFallback);
     }
 
     // ---- Events ----
+
+    private void HandleImpact()
+    {
+        pendingHits.ResolveNext();
+    }
 
     private void HandleDamaged(Health victim, float amount, GameObject source)
     {
@@ -311,6 +344,7 @@ public class EnemyAI : MonoBehaviour
 
     private void HandleDied(Health victim, GameObject killer)
     {
+        pendingHits.Clear();
         SetState(EnemyState.Dead);
 
         if (AgentReady)
