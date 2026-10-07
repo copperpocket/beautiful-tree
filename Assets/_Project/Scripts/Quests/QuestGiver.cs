@@ -3,8 +3,9 @@ using TMPro;
 using UnityEngine;
 
 /// <summary>
-/// An NPC that offers quests and accepts turn-ins. Shows ! (available),
-/// grey ? (in progress) or yellow ? (ready). Attach to the NPC root.
+/// An NPC that offers quests and accepts turn-ins through the quest window.
+/// Shows ! (available), grey ? (in progress) or yellow ? (ready).
+/// Attach to the NPC root.
 /// </summary>
 public class QuestGiver : MonoBehaviour
 {
@@ -13,6 +14,10 @@ public class QuestGiver : MonoBehaviour
 
     [Header("Quests (offered in order)")]
     public List<QuestDefinition> quests = new();
+
+    [Header("UI")]
+    [Tooltip("Leave empty to find it automatically.")]
+    public QuestDialogUI dialog;
 
     [Header("Indicator (optional 3D TextMeshPro above the head)")]
     public TMP_Text indicator;
@@ -26,6 +31,9 @@ public class QuestGiver : MonoBehaviour
     {
         playerLog = FindFirstObjectByType<QuestLog>();
         cam = Camera.main;
+
+        if (dialog == null)
+            dialog = FindFirstObjectByType<QuestDialogUI>();
     }
 
     void Update()
@@ -36,7 +44,7 @@ public class QuestGiver : MonoBehaviour
             indicator.transform.rotation = cam.transform.rotation;
     }
 
-    /// <summary>Turn in a finished quest first, then offer the next available one.</summary>
+    /// <summary>Turn-ins first, then new quests, then progress on active ones.</summary>
     public void Interact(QuestLog log)
     {
         if (log == null)
@@ -46,8 +54,8 @@ public class QuestGiver : MonoBehaviour
         {
             if (log.IsReadyToTurnIn(q))
             {
-                Debug.Log($"{npcName}: {q.completionText}");
-                log.TurnIn(q);
+                if (dialog != null) dialog.ShowTurnIn(this, q, log);
+                else log.TurnIn(q);
                 return;
             }
         }
@@ -56,8 +64,8 @@ public class QuestGiver : MonoBehaviour
         {
             if (log.CanAccept(q))
             {
-                Debug.Log($"{npcName}: {q.description}");
-                log.Accept(q);
+                if (dialog != null) dialog.ShowOffer(this, q, log);
+                else log.Accept(q);
                 return;
             }
         }
@@ -66,7 +74,8 @@ public class QuestGiver : MonoBehaviour
         {
             if (log.IsActive(q))
             {
-                Debug.Log($"{npcName}: Come back when you've finished \"{q.title}\".");
+                if (dialog != null) dialog.ShowProgress(this, q, log);
+                else Debug.Log($"{npcName}: Come back when you've finished \"{q.title}\".");
                 return;
             }
         }

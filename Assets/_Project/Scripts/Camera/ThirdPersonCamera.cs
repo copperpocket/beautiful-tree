@@ -33,6 +33,9 @@ public class ThirdPersonCamera : MonoBehaviour
     private bool dragging;
     private Vector2 savedCursorPos;
 
+    // A press that starts over UI is ignored until released.
+    private bool orbitBlocked, steerBlocked;
+
     void Start()
     {
         var playerInput = target ? target.GetComponent<PlayerInput>() : null;
@@ -66,8 +69,10 @@ public class ThirdPersonCamera : MonoBehaviour
     {
         if (target == null || lookAction == null) return;
 
-        bool orbiting = orbitAction.IsPressed();
-        bool steering = steerAction.IsPressed();
+        UpdateUIBlocks();
+
+        bool orbiting = orbitAction.IsPressed() && !orbitBlocked;
+        bool steering = steerAction.IsPressed() && !steerBlocked;
 
         HandleCursor(orbiting || steering);
 
@@ -91,9 +96,9 @@ public class ThirdPersonCamera : MonoBehaviour
 
         lastTargetYaw = target.eulerAngles.y;
 
-        // 4. Scroll wheel zoom. Raw scroll is roughly +/-120 per notch on Windows.
+        // 4. Scroll wheel zoom. Ignored while the mouse is over UI.
         float scroll = zoomAction != null ? zoomAction.ReadValue<float>() : 0f;
-        if (Mathf.Abs(scroll) > 0.01f)
+        if (Mathf.Abs(scroll) > 0.01f && !UIInputGuard.IsPointerOverUI())
             distance = Mathf.Clamp(distance - Mathf.Sign(scroll) * zoomStep,
                                    minDistance, maxDistance);
 
@@ -113,6 +118,19 @@ public class ThirdPersonCamera : MonoBehaviour
 
         transform.position = pivot + dir * wanted;
         transform.rotation = rotation;
+    }
+
+    private void UpdateUIBlocks()
+    {
+        if (orbitAction.WasPressedThisFrame())
+            orbitBlocked = UIInputGuard.IsPointerOverUI();
+        else if (!orbitAction.IsPressed())
+            orbitBlocked = false;
+
+        if (steerAction.WasPressedThisFrame())
+            steerBlocked = UIInputGuard.IsPointerOverUI();
+        else if (!steerAction.IsPressed())
+            steerBlocked = false;
     }
 
     private void HandleCursor(bool wantDrag)

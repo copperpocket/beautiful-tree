@@ -7,6 +7,7 @@ using UnityEngine.InputSystem;
 /// Selects an enemy by clicking it, or by cycling with Tab. Attach to the Player.
 /// Left click selects. Right click selects and requests auto-attack.
 /// A press that drags orbits or steers the camera instead, matching WoW.
+/// Clicks that start over UI are ignored.
 /// </summary>
 public class PlayerTargeting : MonoBehaviour
 {
@@ -43,6 +44,7 @@ public class PlayerTargeting : MonoBehaviour
         public float pressTime;
         public Vector2 pressPos;
         public float drift;
+        public bool overUI;
     }
 
     private ClickTracker leftClick, rightClick;
@@ -96,6 +98,7 @@ public class PlayerTargeting : MonoBehaviour
             tracker.pressTime = Time.time;
             tracker.pressPos = Mouse.current.position.ReadValue();
             tracker.drift = 0f;
+            tracker.overUI = UIInputGuard.IsPointerOverUI();
             pressPos = tracker.pressPos;
             return false;
         }
@@ -105,6 +108,9 @@ public class PlayerTargeting : MonoBehaviour
             tracker.drift += Mouse.current.delta.ReadValue().magnitude;
 
         if (!action.WasReleasedThisFrame()) return false;
+
+        // The click belonged to the UI, not the world.
+        if (tracker.overUI) return false;
 
         return Time.time - tracker.pressTime <= clickMaxDuration &&
                tracker.drift <= clickMaxPixelDrift;
