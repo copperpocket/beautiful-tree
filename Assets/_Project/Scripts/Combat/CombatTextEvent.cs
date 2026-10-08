@@ -26,19 +26,23 @@ public readonly struct CombatTextEvent
     public readonly GameObject source;
     /// <summary>Optional display text, e.g. "Rage" or "Low Mana".</summary>
     public readonly string label;
+    /// <summary>Optional object the text belongs to (the damaged target). Text follows it.</summary>
+    public readonly Transform anchor;
 
     public CombatTextEvent(
         CombatTextType type,
         float amount,
         Vector3 worldPosition,
         GameObject source = null,
-        string label = null)
+        string label = null,
+        Transform anchor = null)
     {
         this.type = type;
         this.amount = amount;
         this.worldPosition = worldPosition;
         this.source = source;
         this.label = label;
+        this.anchor = anchor;
     }
 }
 

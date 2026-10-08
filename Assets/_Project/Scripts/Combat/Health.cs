@@ -99,7 +99,7 @@ public class Health : MonoBehaviour, IDamageable
         if (IsInvulnerable)
         {
             CombatTextBus.Publish(new CombatTextEvent(
-                CombatTextType.Evade, 0f, AimPosition, source, "Evade"));
+                CombatTextType.Evade, 0f, AimPosition, source, "Evade", transform));
             return;
         }
 
@@ -112,7 +112,8 @@ public class Health : MonoBehaviour, IDamageable
             ? (critical ? CombatTextType.AbilityCritical : CombatTextType.AbilityDamage)
             : (critical ? CombatTextType.CriticalDamage : CombatTextType.Damage);
 
-        CombatTextBus.Publish(new CombatTextEvent(textType, amount, AimPosition, source));
+        CombatTextBus.Publish(new CombatTextEvent(
+            textType, amount, AimPosition, source, null, transform));
 
         SetFlash(true);
         flashUntil = Time.time + flashDuration;
