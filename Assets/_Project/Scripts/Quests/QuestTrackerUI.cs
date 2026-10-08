@@ -34,7 +34,8 @@ public class QuestTrackerUI : MonoBehaviour
         questLog.OnQuestAccepted += HandleChanged;
         questLog.OnQuestProgress += HandleChanged;
         questLog.OnQuestReady += HandleChanged;
-        questLog.OnQuestTurnedIn += HandleTurnedIn;
+        questLog.OnQuestTurnedIn += HandleRemoved;
+        questLog.OnQuestAbandoned += HandleRemoved;
 
         Refresh();
     }
@@ -46,11 +47,12 @@ public class QuestTrackerUI : MonoBehaviour
         questLog.OnQuestAccepted -= HandleChanged;
         questLog.OnQuestProgress -= HandleChanged;
         questLog.OnQuestReady -= HandleChanged;
-        questLog.OnQuestTurnedIn -= HandleTurnedIn;
+        questLog.OnQuestTurnedIn -= HandleRemoved;
+        questLog.OnQuestAbandoned -= HandleRemoved;
     }
 
     private void HandleChanged(QuestLog.ActiveQuest quest) => Refresh();
-    private void HandleTurnedIn(QuestDefinition quest) => Refresh();
+    private void HandleRemoved(QuestDefinition quest) => Refresh();
 
     public void Refresh()
     {

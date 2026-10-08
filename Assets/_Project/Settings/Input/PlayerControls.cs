@@ -221,6 +221,16 @@ public partial class @PlayerControls: IInputActionCollection2, IDisposable
                     ""interactions"": """",
                     ""initialStateCheck"": false,
                     ""priority"": 0
+                },
+                {
+                    ""name"": ""QuestLog"",
+                    ""type"": ""Button"",
+                    ""id"": ""5dad3121-c619-4670-9d8b-6a41533e6cfb"",
+                    ""expectedControlType"": """",
+                    ""processors"": """",
+                    ""interactions"": """",
+                    ""initialStateCheck"": false,
+                    ""priority"": 0
                 }
             ],
             ""bindings"": [
@@ -487,6 +497,17 @@ public partial class @PlayerControls: IInputActionCollection2, IDisposable
                     ""action"": ""AutoRun"",
                     ""isComposite"": false,
                     ""isPartOfComposite"": false
+                },
+                {
+                    ""name"": """",
+                    ""id"": ""707d2321-7c7c-4a15-8b81-2425f1127f38"",
+                    ""path"": ""<Keyboard>/l"",
+                    ""interactions"": """",
+                    ""processors"": """",
+                    ""groups"": """",
+                    ""action"": ""QuestLog"",
+                    ""isComposite"": false,
+                    ""isPartOfComposite"": false
                 }
             ]
         }
@@ -508,6 +529,7 @@ public partial class @PlayerControls: IInputActionCollection2, IDisposable
         m_Player_ClearTarget = m_Player.FindAction("ClearTarget", throwIfNotFound: true);
         m_Player_WalkToggle = m_Player.FindAction("WalkToggle", throwIfNotFound: true);
         m_Player_AutoRun = m_Player.FindAction("AutoRun", throwIfNotFound: true);
+        m_Player_QuestLog = m_Player.FindAction("QuestLog", throwIfNotFound: true);
     }
 
     ~@PlayerControls()
@@ -601,6 +623,7 @@ public partial class @PlayerControls: IInputActionCollection2, IDisposable
     private readonly InputAction m_Player_ClearTarget;
     private readonly InputAction m_Player_WalkToggle;
     private readonly InputAction m_Player_AutoRun;
+    private readonly InputAction m_Player_QuestLog;
     /// <summary>
     /// Provides access to input actions defined in input action map "Player".
     /// </summary>
@@ -664,6 +687,10 @@ public partial class @PlayerControls: IInputActionCollection2, IDisposable
         /// Provides access to the underlying input action "Player/AutoRun".
         /// </summary>
         public InputAction @AutoRun => m_Wrapper.m_Player_AutoRun;
+        /// <summary>
+        /// Provides access to the underlying input action "Player/QuestLog".
+        /// </summary>
+        public InputAction @QuestLog => m_Wrapper.m_Player_QuestLog;
         /// <summary>
         /// Provides access to the underlying input action map instance.
         /// </summary>
@@ -729,6 +756,9 @@ public partial class @PlayerControls: IInputActionCollection2, IDisposable
             @AutoRun.started += instance.OnAutoRun;
             @AutoRun.performed += instance.OnAutoRun;
             @AutoRun.canceled += instance.OnAutoRun;
+            @QuestLog.started += instance.OnQuestLog;
+            @QuestLog.performed += instance.OnQuestLog;
+            @QuestLog.canceled += instance.OnQuestLog;
         }
 
         /// <summary>
@@ -779,6 +809,9 @@ public partial class @PlayerControls: IInputActionCollection2, IDisposable
             @AutoRun.started -= instance.OnAutoRun;
             @AutoRun.performed -= instance.OnAutoRun;
             @AutoRun.canceled -= instance.OnAutoRun;
+            @QuestLog.started -= instance.OnQuestLog;
+            @QuestLog.performed -= instance.OnQuestLog;
+            @QuestLog.canceled -= instance.OnQuestLog;
         }
 
         /// <summary>
@@ -910,5 +943,12 @@ public partial class @PlayerControls: IInputActionCollection2, IDisposable
         /// <seealso cref="UnityEngine.InputSystem.InputAction.performed" />
         /// <seealso cref="UnityEngine.InputSystem.InputAction.canceled" />
         void OnAutoRun(InputAction.CallbackContext context);
+        /// <summary>
+        /// Method invoked when associated input action "QuestLog" is either <see cref="UnityEngine.InputSystem.InputAction.started" />, <see cref="UnityEngine.InputSystem.InputAction.performed" /> or <see cref="UnityEngine.InputSystem.InputAction.canceled" />.
+        /// </summary>
+        /// <seealso cref="UnityEngine.InputSystem.InputAction.started" />
+        /// <seealso cref="UnityEngine.InputSystem.InputAction.performed" />
+        /// <seealso cref="UnityEngine.InputSystem.InputAction.canceled" />
+        void OnQuestLog(InputAction.CallbackContext context);
     }
 }

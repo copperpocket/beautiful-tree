@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using UnityEngine;
 
 /// <summary>
-/// The player's quests: accepts, tracks kills, and turns in for XP.
+/// The player's quests: accepts, tracks kills, turns in for XP, and abandons.
 /// Attach to the Player.
 /// </summary>
 [RequireComponent(typeof(PlayerStats))]
@@ -33,6 +33,7 @@ public class QuestLog : MonoBehaviour
     public event Action<ActiveQuest> OnQuestProgress;
     public event Action<ActiveQuest> OnQuestReady;
     public event Action<QuestDefinition> OnQuestTurnedIn;
+    public event Action<QuestDefinition> OnQuestAbandoned;
 
     public IReadOnlyList<ActiveQuest> Active => active;
 
@@ -100,6 +101,22 @@ public class QuestLog : MonoBehaviour
             Debug.Log($"Quest complete: {def.title} (+{def.xpReward} XP)");
 
         OnQuestTurnedIn?.Invoke(def);
+        return true;
+    }
+
+    /// <summary>Drops an active quest. Progress is lost; it can be accepted again.</summary>
+    public bool Abandon(QuestDefinition def)
+    {
+        var quest = Find(def);
+        if (quest == null)
+            return false;
+
+        active.Remove(quest);
+
+        if (logProgress)
+            Debug.Log($"Quest abandoned: {def.title}");
+
+        OnQuestAbandoned?.Invoke(def);
         return true;
     }
 
