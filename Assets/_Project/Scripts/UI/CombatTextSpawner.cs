@@ -23,7 +23,7 @@ public class CombatTextSpawner : MonoBehaviour
         public float bottom;
         [Tooltip("Band height. Text fades out before reaching the top.")]
         public float height;
-        [Tooltip("Minimum vertical gap between texts in this band.")]
+        [Tooltip("Minimum vertical gap between texts in this band (before Size Multiplier).")]
         public float spacing;
         [Tooltip("Random sideways start offset, plus or minus, in pixels.")]
         public float jitter;
@@ -58,8 +58,16 @@ public class CombatTextSpawner : MonoBehaviour
     [Header("Font (optional)")]
     [Tooltip("Leave empty for the TMP default font.")]
     public TMP_FontAsset font;
-    [Tooltip("Optional preset, e.g. 'LiberationSans SDF - Outline'. Must belong to the font.")]
+    [Tooltip("Leave EMPTY for no outline. Only set this if you want a material preset.")]
     public Material fontMaterial;
+
+    [Header("Style")]
+    [Tooltip("Scales every lane's font size and line spacing.")]
+    public float sizeMultiplier = 1.4f;
+    public bool bold = true;
+    [Range(0f, 1f)]
+    [Tooltip("Blends colours towards white for a softer, pastel look. 0 = full colour.")]
+    public float colourSoftness = 0.25f;
 
     [Header("Lanes (bottom to top, in canvas pixels)")]
     public LaneSettings selfLane = new LaneSettings
@@ -164,18 +172,20 @@ public class CombatTextSpawner : MonoBehaviour
         var rect = (RectTransform)go.transform;
         rect.anchorMin = rect.anchorMax = new Vector2(0.5f, 0.5f);
         rect.pivot = new Vector2(0.5f, 0.5f);
-        rect.sizeDelta = new Vector2(400f, 60f);
+        rect.sizeDelta = new Vector2(600f, 100f);
 
         var text = go.GetComponent<TextMeshProUGUI>();
         if (font != null) text.font = font;
         if (fontMaterial != null) text.fontSharedMaterial = fontMaterial;
         text.text = value;
-        text.color = color;
+        text.color = Soften(color);
+        text.fontStyle = bold ? FontStyles.Bold : FontStyles.Normal;
         text.alignment = TextAlignmentOptions.Center;
         text.textWrappingMode = TextWrappingModes.NoWrap;
         text.overflowMode = TextOverflowModes.Overflow;
         text.raycastTarget = false;
-        text.fontSize = s.fontSize * (crit ? critSizeMultiplier : message ? messageSizeMultiplier : 1f);
+        text.fontSize = s.fontSize * sizeMultiplier *
+                        (crit ? critSizeMultiplier : message ? messageSizeMultiplier : 1f);
         text.alpha = 0f;   // placed and shown in LateUpdate
 
         lanes[(int)lane].Add(new Item
@@ -191,6 +201,13 @@ public class CombatTextSpawner : MonoBehaviour
             age = 0f,
             lifetime = s.lifetime
         });
+    }
+
+    private Color Soften(Color c)
+    {
+        Color soft = Color.Lerp(c, Color.white, colourSoftness);
+        soft.a = c.a;
+        return soft;
     }
 
     // ---- Movement ----
@@ -211,6 +228,7 @@ public class CombatTextSpawner : MonoBehaviour
         {
             var list = lanes[l];
             LaneSettings s = Settings((Lane)l);
+            float spacing = s.spacing * sizeMultiplier;
 
             // 1. Age and scroll.
             foreach (var it in list)
@@ -222,7 +240,7 @@ public class CombatTextSpawner : MonoBehaviour
             // 2. Keep every older text at least one line above the next newer one.
             for (int i = list.Count - 2; i >= 0; i--)
             {
-                float required = list[i + 1].targetY + s.spacing;
+                float required = list[i + 1].targetY + spacing;
                 if (list[i].targetY < required)
                     list[i].targetY = required;
             }
