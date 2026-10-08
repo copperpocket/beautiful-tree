@@ -19,18 +19,19 @@ public class QuestGiver : MonoBehaviour
     [Tooltip("Leave empty to find it automatically.")]
     public QuestDialogUI dialog;
 
-    [Header("Indicator (optional 3D TextMeshPro above the head)")]
+    [Header("Marker")]
+    [Tooltip("3D marker above the head.")]
+    public QuestMarker marker;
+    [Tooltip("Optional fallback: flat text marker, used only if Marker is empty.")]
     public TMP_Text indicator;
     public Color readyColor = new Color(1f, 0.85f, 0.15f);
     public Color inProgressColor = new Color(0.6f, 0.6f, 0.6f);
 
     private QuestLog playerLog;
-    private Camera cam;
 
     void Start()
     {
         playerLog = FindFirstObjectByType<QuestLog>();
-        cam = Camera.main;
 
         if (dialog == null)
             dialog = FindFirstObjectByType<QuestDialogUI>();
@@ -38,10 +39,7 @@ public class QuestGiver : MonoBehaviour
 
     void Update()
     {
-        UpdateIndicator();
-
-        if (indicator != null && cam != null)
-            indicator.transform.rotation = cam.transform.rotation;
+        UpdateMarker();
     }
 
     /// <summary>Turn-ins first, then new quests, then progress on active ones.</summary>
@@ -83,27 +81,43 @@ public class QuestGiver : MonoBehaviour
         Debug.Log($"{npcName}: I have nothing more for you.");
     }
 
-    private void UpdateIndicator()
+    private QuestMarkerState GetState()
     {
-        if (indicator == null)
-            return;
-
         if (playerLog == null)
+            return QuestMarkerState.None;
+
+        foreach (var q in quests)
+            if (playerLog.IsReadyToTurnIn(q)) return QuestMarkerState.Ready;
+
+        foreach (var q in quests)
+            if (playerLog.CanAccept(q)) return QuestMarkerState.Available;
+
+        foreach (var q in quests)
+            if (playerLog.IsActive(q)) return QuestMarkerState.InProgress;
+
+        return QuestMarkerState.None;
+    }
+
+    private void UpdateMarker()
+    {
+        QuestMarkerState state = GetState();
+
+        if (marker != null)
         {
-            indicator.text = "";
+            marker.SetState(state);
             return;
         }
 
-        foreach (var q in quests)
-            if (playerLog.IsReadyToTurnIn(q)) { Show("?", readyColor); return; }
+        if (indicator == null)
+            return;
 
-        foreach (var q in quests)
-            if (playerLog.CanAccept(q)) { Show("!", readyColor); return; }
-
-        foreach (var q in quests)
-            if (playerLog.IsActive(q)) { Show("?", inProgressColor); return; }
-
-        indicator.text = "";
+        switch (state)
+        {
+            case QuestMarkerState.Ready:      Show("?", readyColor); break;
+            case QuestMarkerState.Available:  Show("!", readyColor); break;
+            case QuestMarkerState.InProgress: Show("?", inProgressColor); break;
+            default:                          indicator.text = ""; break;
+        }
     }
 
     private void Show(string symbol, Color color)
