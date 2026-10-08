@@ -31,3 +31,9 @@ MonoBehaviour:
   variance: 0.12
   critChance: 0.1
   critMultiplier: 2
+  startsAutoAttack: 0
+  impactFallback: 0.35
+  projectilePrefab: {fileID: 1818600538839472139, guid: f2c2be7c932eded45b934bf079709f0f, type: 3}
+  projectileSpeed: 24
+  launchFromLeftHand: 0
+  launchOffset: {x: 0, y: 0, z: 0.25}
